@@ -1,0 +1,76 @@
+- name: Add the NodeSource apt repository
+  become: yes
+  block:
+    - name: Download the NodeSource key
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+        dest: /etc/apt/trusted.gpg.d/nodesource.asc
+
+    - name: Add the NodeSource repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Add the NodeSource src repository
+      ansible.builtin.apt_repository:
+        repo: "deb-src [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+- name: Install acl, libcap2-bin, git and node
+  become: yes
+  ansible.builtin.package:
+    name:
+      - acl 
+      - libcap2-bin # to set the capabilities for the node binary
+      - git
+      - nodejs
+    state: latest
+    update_cache: yes
+
+- name: Create the bot user
+  become: yes
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: bot
+    home: /opt/bot
+    shell: /usr/sbin/nologin
+
+- name: Clone a github repository
+  become: yes
+  become_user: bot
+  ansible.builtin.git:
+    repo: 'https://github.com/csunibo/informabot.git'
+    dest: /opt/bot/source
+
+- name: Install packages with npm
+  become: yes
+  become_user: bot 
+  community.general.npm:
+    path: /opt/bot/source
+
+- name: Allow the node binary to listen on low ports
+  become: yes
+  ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
+
+- name: Read the bot token
+  ansible.builtin.set_fact:
+    bot_token: "{{ lookup('file', 'passwords/bot_token') }}"
+
+- name: Copy the systemd service
+  become: yes
+  ansible.builtin.template:
+    src: files/bot/bot.service.j2
+    dest: /etc/systemd/system/bot.service
+
+- name: Reload the systemd daemon
+  become: yes
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Restart and enable the bot service
+  become: yes
+  ansible.builtin.service:
+    name: bot 
+    state: restarted
+    enabled: yes

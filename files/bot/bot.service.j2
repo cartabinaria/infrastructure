@@ -1,0 +1,15 @@
+[Unit]
+Description=Unibo bot 
+Documentation=https://github.com/csunibo/informabot.git
+
+After=network.target
+
+[Service]
+User=bot
+Group=bot
+ExecStart=node index.js {{ bot_token }}
+WorkingDirectory=/opt/bot/source/src
+ReadWriteDirectories=/opt/bot/source/src
+
+[Install]
+WantedBy=multi-user.target

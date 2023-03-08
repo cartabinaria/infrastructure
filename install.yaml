@@ -13,3 +13,9 @@
   tasks:
     - name: Setup calendar
       ansible.builtin.import_tasks: tasks/calendar.yaml
+
+- name: Bot
+  hosts: bot
+  tasks: 
+    - name: Setup bot
+      ansible.builtin.import_tasks: tasks/bot.yaml
