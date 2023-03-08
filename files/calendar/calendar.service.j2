@@ -1,0 +1,15 @@
+[Unit]
+Description=Unibo Calendar
+Documentation=https://github.com/VaiTon/UniboCalendar
+
+After=network.target
+
+[Service]
+User=calendar
+Group=calendar
+ExecStart=/opt/calendar/source
+WorkingDirectory=/opt/calendar/source
+ReadWriteDirectories=/opt/calendar/source
+
+[Install]
+WantedBy=multi-user.target
