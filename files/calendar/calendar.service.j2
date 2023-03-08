@@ -7,9 +7,12 @@ After=network.target
 [Service]
 User=calendar
 Group=calendar
-ExecStart=/opt/calendar/source
+ExecStart=npm start
 WorkingDirectory=/opt/calendar/source
 ReadWriteDirectories=/opt/calendar/source
+
+Environment="PORT=80"
+Environment="BIND_ADDR=0.0.0.0"
 
 [Install]
 WantedBy=multi-user.target

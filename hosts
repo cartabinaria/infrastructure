@@ -1,8 +1,6 @@
 admstaff:
   vars:
-    domain: 'students.cs.unibo.it'
     http_proxy: 130.136.3.11
-    calendar_subdomain: calendar
 
   hosts:
     bot:
