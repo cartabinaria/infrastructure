@@ -1,0 +1,3 @@
+====================================  bot  ====================================
+Per eseguire il playbook sull'host `bot` è necessario inserire il token del bot
+di telegram nel file `passwords/bot_token`.
