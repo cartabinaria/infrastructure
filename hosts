@@ -11,7 +11,3 @@ admstaff:
       ansible_host: 130.136.3.71
       ansible_port: 2222
       ansible_user: debian
-    gobot:
-      ansible_host: 130.136.3.29
-      ansible_port: 2222
-      ansible_user: debian

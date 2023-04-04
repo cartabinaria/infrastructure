@@ -16,12 +16,6 @@
 
 - name: Bot
   hosts: bot
-  tasks: 
+  tasks:
     - name: Setup bot
       ansible.builtin.import_tasks: tasks/bot.yaml
-
-- name: GoBot
-  hosts: gobot
-  tasks:
-    - name: Setup GoBot
-      ansible.builtin.import_tasks: tasks/gobot.yaml
