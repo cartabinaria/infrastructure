@@ -16,6 +16,6 @@
 
 - name: Bot
   hosts: bot
-  tasks: 
+  tasks:
     - name: Setup bot
       ansible.builtin.import_tasks: tasks/bot.yaml
