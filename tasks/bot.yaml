@@ -40,7 +40,6 @@
   become_user: bot
   ansible.builtin.git:
     repo: 'https://github.com/csunibo/informabot'
-    version: bot-on-the-go
     dest: /opt/bot/source
 
 - name: Read the bot token
