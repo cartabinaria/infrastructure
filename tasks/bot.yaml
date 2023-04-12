@@ -56,7 +56,7 @@
 - name: Copy the systemd service
   become: yes
   ansible.builtin.template:
-    src: files/gobot/bot.service.j2
+    src: files/bot/bot.service.j2
     dest: /etc/systemd/system/bot.service
 
 - name: Reload the systemd daemon
