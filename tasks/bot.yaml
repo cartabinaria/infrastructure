@@ -6,7 +6,7 @@
   become: yes
   ansible.builtin.package:
     name:
-      - acl 
+      - acl
       - git
     state: latest
     update_cache: yes
@@ -39,8 +39,10 @@
   become: yes
   become_user: bot
   ansible.builtin.git:
-    repo: 'https://github.com/csunibo/informabot'
+    repo: "https://github.com/csunibo/informabot"
     dest: /opt/bot/source
+    version: main
+    single_branch: yes
 
 - name: Read the bot token
   ansible.builtin.set_fact:
@@ -67,6 +69,6 @@
 - name: Restart and enable the bot service
   become: yes
   ansible.builtin.service:
-    name: bot 
-    state: started 
+    name: bot
+    state: started
     enabled: yes
