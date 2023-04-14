@@ -70,5 +70,6 @@
   become: yes
   ansible.builtin.service:
     name: bot
-    state: started
+    enabled: true
+    state: restarted
     enabled: yes
