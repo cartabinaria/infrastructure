@@ -6,7 +6,7 @@
   become: yes
   ansible.builtin.package:
     name:
-      - acl
+      - acl 
       - git
     state: latest
     update_cache: yes
@@ -42,7 +42,7 @@
     repo: "https://github.com/csunibo/informabot"
     dest: /opt/bot/source
     version: main
-    single_branch: yes
+  register: git_result
 
 - name: Read the bot token
   ansible.builtin.set_fact:
@@ -54,6 +54,7 @@
   ansible.builtin.shell:
     chdir: /opt/bot/source
     cmd: /opt/bot/go/bin/go build -o /opt/bot/bot main.go
+  when: git_result.changed
 
 - name: Copy the systemd service
   become: yes
@@ -66,10 +67,21 @@
   ansible.builtin.service:
     daemon_reload: true
 
+- name: Start and enable the bot service
+  become: yes
+  ansible.builtin.service:
+    name: bot 
+    state: started 
+    enabled: yes
+  when: git_result.changed
+
+
 - name: Restart and enable the bot service
   become: yes
   ansible.builtin.service:
-    name: bot
-    enabled: true
-    state: restarted
+    name: bot 
+    state: restarted 
     enabled: yes
+  when: not git_result.changed
+    
+  
