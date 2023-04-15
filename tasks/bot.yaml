@@ -42,6 +42,7 @@
     repo: "https://github.com/csunibo/informabot"
     dest: /opt/bot/source
     version: main
+    single_branch: true
   register: git_result
 
 - name: Read the bot token
@@ -72,7 +73,7 @@
   ansible.builtin.service:
     name: bot 
     state: started 
-    enabled: yes
+    enabled: true
   when: not git_result.changed
 
 
@@ -81,7 +82,7 @@
   ansible.builtin.service:
     name: bot 
     state: restarted 
-    enabled: yes
+    enabled: true
   when: git_result.changed
     
   
