@@ -1,12 +1,10 @@
 
-- name: Install acl, git, pip, venv
+- name: Install acl, git
   become: yes
   ansible.builtin.package:
     name:
       - acl 
       - git
-      - python3-pip
-      - python3-venv
     state: latest
     update_cache: yes
 
@@ -19,29 +17,74 @@
     home: /opt/bot
     shell: /usr/sbin/nologin
 
-- name: install wheel
-  become: yes
-  become_user: bot
-  ansible.builtin.pip:
-    name: wheel
-
-- name: install pyenv
-  become: yes
-  become_user: bot
-  ansible.builtin.pip:
-    name: pyenv
-
-- name: install python 3.10
-  become: yes
-  become_user: bot
+- name: Get Python version
   ansible.builtin.command:
-    cmd: pyenv install 3.10
+    cmd: python3 --version
+  register: python_version
 
-- name: set python 3.10 as local
+- name: Set Python version variable
+  ansible.builtin.set_fact:
+    python_version: "{{ python_version.stdout_lines[0] }}"
+
+- name: Print Python version
+  ansible.builtin.debug:
+    var: python_version
+
+- name: stat python3.10 directory
+  ansible.builtin.stat:
+    path: /usr/local/bin/python3.10
+  register: python3_10
+
+- name: set has python3.10
+  ansible.builtin.set_fact:
+    has_python3_10: "{{ python3_10.stat.exists or '3.10' in python_version }}"
+
+- name: Install python dependencies
+  become: yes
+  apt:
+    name:
+      - make
+      - build-essential
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - wget
+      - curl
+      - llvm
+      - libncurses5-dev
+      - libncursesw5-dev
+      - xz-utils
+      - tk-dev
+      - libffi-dev
+      - liblzma-dev
+    state: present
+  when: not has_python3_10
+
+
+- name: download tar file
   become: yes
   become_user: bot
+  ansible.builtin.unarchive:
+    src: https://www.python.org/ftp/python/3.10.10/Python-3.10.10.tgz
+    dest: /opt/bot/
+    remote_src: yes
+  when: not has_python3_10
+  
+- name: Configure python
+  become: yes
   ansible.builtin.command:
-    cmd: pyenv local 3.10
+    cmd: ./configure --enable-optimizations --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu && make install
+    chdir: /opt/bot/Python-3.10.10
+  when: not has_python3_10
+
+- name: Configure python
+  become: yes
+  ansible.builtin.command:
+    cmd: make install
+    chdir: /opt/bot/Python-3.10.10
+  when: not has_python3_10
 
 - name: Check if poetry is installed
   become: yes
