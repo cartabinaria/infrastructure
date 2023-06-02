@@ -1,0 +1,15 @@
+[Unit]
+Description=Informabot
+Documentation=https://github.com/csunibo/csgitbot.git
+
+After=network.target
+
+[Service]
+User=bot
+Group=bot
+ExecStart=cd /opt/bot/source && /opt/bot/.local/bin/poetry run start
+WorkingDirectory=/opt/bot/source
+ReadWriteDirectories=/opt/bot/source
+
+[Install]
+WantedBy=multi-user.target

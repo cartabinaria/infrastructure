@@ -23,3 +23,7 @@ admstaff:
       ansible_host: 130.136.3.75
       ansible_port: 2222
       ansible_user: debian
+    csgitbot:
+      ansible_host: 130.136.3.76
+      ansible_port: 2222
+      ansible_user: debian
