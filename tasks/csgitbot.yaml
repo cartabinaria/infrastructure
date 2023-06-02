@@ -62,7 +62,6 @@
     state: present
   when: not has_python3_10
 
-
 - name: download tar file
   become: yes
   become_user: bot
