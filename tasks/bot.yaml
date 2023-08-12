@@ -26,6 +26,30 @@
     path: /opt/bot/go
   register: go_installed
 
+- name: Define a variable to avoid errors
+  ansible.builtin.set_fact:
+    need_to_reinstall_go: false
+
+- name: Check if go match the required version
+  when: go_installed.stat.exists
+  block: 
+  - name: Get the installed version
+    become: true
+    ansible.builtin.command: /opt/bot/go/bin/go version
+    register: go_installed_version
+
+  - name: Remove go dir if the version does not match
+    when: not go_version in go_installed_version.stdout
+    become: true
+    ansible.builtin.file:
+      path: /opt/bot/go
+      state: absent
+  
+  - name: Make go reinstall
+    when: not go_version in go_installed_version.stdout
+    ansible.builtin.set_fact:
+      need_to_reinstall_go: true
+
 - name: Install Go Binary
   become: true
   become_user: bot
@@ -33,7 +57,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/bot
     remote_src: true
-  when: not go_installed.stat.exists
+  when: not go_installed.stat.exists or need_to_reinstall_go
 
 - name: Clone a github repository
   become: true
