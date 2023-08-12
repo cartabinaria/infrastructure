@@ -3,16 +3,16 @@
     go_version: 1.20.2
 
 - name: Install acl, git
-  become: yes
+  become: true
   ansible.builtin.package:
     name:
       - acl 
       - git
     state: latest
-    update_cache: yes
+    update_cache: true
 
 - name: Create the bot user
-  become: yes
+  become: true
   ansible.builtin.user:
     state: present
     system: true
@@ -21,22 +21,22 @@
     shell: /usr/sbin/nologin
 
 - name: Check if go is installed
-  become: yes
+  become: true
   ansible.builtin.stat:
     path: /opt/bot/go
   register: go_installed
 
 - name: Install Go Binary
-  become: yes
+  become: true
   become_user: bot
   ansible.builtin.unarchive:
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/bot
-    remote_src: yes
+    remote_src: true
   when: not go_installed.stat.exists
 
 - name: Clone a github repository
-  become: yes
+  become: true
   become_user: bot
   ansible.builtin.git:
     repo: "https://github.com/csunibo/informabot"
@@ -50,7 +50,7 @@
     bot_token: "{{ lookup('file', 'passwords/bot_token') }}"
 
 - name: Build GoBot
-  become: yes
+  become: true
   become_user: bot
   ansible.builtin.shell:
     chdir: /opt/bot/source
@@ -58,18 +58,18 @@
   when: git_result.changed
 
 - name: Copy the systemd service
-  become: yes
+  become: true
   ansible.builtin.template:
     src: files/bot/bot.service.j2
     dest: /etc/systemd/system/bot.service
 
 - name: Reload the systemd daemon
-  become: yes
+  become: true
   ansible.builtin.service:
     daemon_reload: true
 
 - name: Start and enable the bot service
-  become: yes
+  become: true
   ansible.builtin.service:
     name: bot 
     state: started 
@@ -78,7 +78,7 @@
 
 
 - name: Restart and enable the bot service
-  become: yes
+  become: true
   ansible.builtin.service:
     name: bot 
     state: restarted 
