@@ -26,10 +26,6 @@
     path: /opt/bot/go
   register: go_installed
 
-- name: Define a variable to avoid errors
-  ansible.builtin.set_fact:
-    need_to_reinstall_go: false
-
 - name: Check if go match the required version
   when: go_installed.stat.exists
   block: 
@@ -57,7 +53,8 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/bot
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go
+  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  register: go_has_been_reinstalled
 
 - name: Clone a github repository
   become: true
@@ -74,12 +71,13 @@
     bot_token: "{{ lookup('file', 'passwords/bot_token') }}"
 
 - name: Build GoBot
+  when: git_result.changed or go_has_been_reinstalled.changed|default('false')
   become: true
   become_user: bot
   ansible.builtin.shell:
     chdir: /opt/bot/source
     cmd: /opt/bot/go/bin/go build -o /opt/bot/bot main.go
-  when: git_result.changed
+  register: bot_has_been_built
 
 - name: Copy the systemd service
   become: true
@@ -107,6 +105,6 @@
     name: bot 
     state: restarted 
     enabled: true
-  when: git_result.changed
+  when: git_result.changed or bot_has_been_built.changed|default('false')
     
   
