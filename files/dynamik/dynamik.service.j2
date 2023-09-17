@@ -12,7 +12,7 @@ WorkingDirectory=/opt/dynamik/source
 ReadWriteDirectories=/opt/dynamik/source
 
 Environment="PORT=80"
-Environment="HOST=localhost"
+Environment="HOST={{ ansible_host }}"
 
 [Install]
 WantedBy=multi-user.target
