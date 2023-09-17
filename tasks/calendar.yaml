@@ -1,84 +1,46 @@
-- name: Allow TCP on HTTP from the proxy
-  become: true
-  community.general.ufw:
-    rule: allow
-    direction: "{{ item }}"
-    from_ip: "{{ http_proxy }}"
-    port: 80
-    proto: tcp
-  loop:
-    - in
-    - out
-
-- name: Add the NodeSource apt repository
-  become: yes
+- name: Allow HTTP from the proxy
   block:
-    - name: Download the NodeSource key
-      ansible.builtin.get_url:
-        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
-        dest: /etc/apt/trusted.gpg.d/nodesource.asc
+    - name: Allow TCP on HTTP from the proxy
+      become: true
+      community.general.ufw:
+        rule: allow
+        direction: "{{ item }}"
+        from_ip: "{{ http_proxy }}"
+        port: 8080
+        proto: tcp
+      loop:
+        - in
+        - out
 
-    - name: Add the NodeSource repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
-        state: present
+    - name: Allow UDP on HTTP from the proxy
+      become: true
+      community.general.ufw:
+        rule: allow
+        direction: "{{ item }}"
+        from_ip: "{{ http_proxy }}"
+        port: 8080
+        proto: udp
+      loop:
+        - in
+        - out
 
-    - name: Add the NodeSource src repository
-      ansible.builtin.apt_repository:
-        repo: "deb-src [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
-        state: present
+- name: Pull the calendar container
+  containers.podman.podman_image:
+    name: "{{ podman_image }}"
 
-- name: Install acl, libcap2-bin, git and node
-  become: yes
-  ansible.builtin.package:
-    name:
-      - acl # needed to become the calendar user
-      - libcap2-bin # to set the capabilities for the node binary
-      - git
-      - nodejs
-    state: latest
-    update_cache: yes
+- name: Run the calendar container
+  containers.podman.podman_container:
+    name: unibocalendar
+    image: "{{ podman_image }}"
+    publish: 8080:8080
+    state: started
+    recreate: false
 
-- name: Create the calendar user
-  become: yes
-  ansible.builtin.user:
-    state: present
-    system: true
-    name: calendar
-    home: /opt/calendar
-    shell: /usr/sbin/nologin
-
-- name: Clone the UniboCalendar project
-  become: yes
-  become_user: calendar
-  ansible.builtin.git:
-    repo: https://github.com/VaiTon/UniboCalendar
-    dest: /opt/calendar/source
-
-- name: Install packages with npm
-  become: yes
-  become_user: calendar
-  community.general.npm:
-    path: /opt/calendar/source
-
-- name: Allow the node binary to listen on low ports
-  become: yes
-  ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
-
-- name: Copy the systemd service
-  become: yes
-  ansible.builtin.template:
-    src: files/calendar/calendar.service.j2
-    dest: /etc/systemd/system/calendar.service
-
-- name: Reload the systemd daemon
-  become: yes
-  ansible.builtin.service:
-    daemon_reload: true
-
-- name: Restart and enable the calendar service
-  become: yes
-  ansible.builtin.service:
-    name: calendar
-    state: restarted
-    enabled: yes
+- name: Check if the calendar is up
+  block:
+    - name: Wait 5 seconds
+      ansible.builtin.pause:
+        seconds: 5
+    - name: Check if the calendar is up
+      ansible.builtin.uri:
+        url: "{{ check_url }}"
