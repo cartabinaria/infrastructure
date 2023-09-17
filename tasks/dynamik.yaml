@@ -1,0 +1,111 @@
+- name: Allow TCP on HTTP from the proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    direction: "{{ item }}"
+    from_ip: "{{ http_proxy }}"
+    port: 80
+    proto: tcp
+  loop:
+    - in
+    - out
+
+- name: Add the NodeSource apt repository
+  become: true
+  block:
+    - name: Download the NodeSource key
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+        dest: /etc/apt/trusted.gpg.d/nodesource.asc
+
+    - name: Add the NodeSource repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Add the NodeSource src repository
+      ansible.builtin.apt_repository:
+        repo: "deb-src [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+- name: Install acl, libcap2-bin, git and node
+  become: true
+  ansible.builtin.package:
+    name:
+      - acl # needed to become the dynamik user
+      - libcap2-bin # to set the capabilities for the node binary
+      - git
+      - nodejs
+      - vite
+    state: latest
+    update_cache: true
+
+- name: Create the dynamik user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: dynamik
+    home: /opt/dynamik
+    shell: /bin/bash
+
+- name: Clone the dynamik project
+  become: true
+  become_user: dynamik
+  ansible.builtin.git:
+    repo: https://github.com/csunibo/dynamik
+    dest: /opt/dynamik/source
+    force: true
+
+- name: Install pnpm
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: | 
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+- name: Install adapter for node
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: |
+    /opt/dynamik/.local/share/pnpm/pnpm i -D @sveltejs/adapter-node
+  args:
+    chdir: /opt/dynamik/source
+    executable: /bin/bash
+
+- name: Copy the modified version of svelte.config for node deploy
+  become: true
+  become_user: dynamik
+  ansible.builtin.copy:
+    src: files/dynamik/svelte.config.js
+    dest: /opt/dynamik/source/svelte.config.js
+
+- name: Build with pnpm
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: |
+    /opt/dynamik/.local/share/pnpm/pnpm run build
+  args:
+    chdir: /opt/dynamik/source
+    executable: /bin/bash
+
+- name: Allow the node binary to listen on low ports
+  become: true
+  ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
+
+- name: Copy the systemd service
+  become: true
+  ansible.builtin.template:
+    src: files/dynamik/dynamik.service.j2
+    dest: /etc/systemd/system/dynamik.service
+
+- name: Reload the systemd daemon
+  become: true
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Restart and enable the dynamik service
+  become: true
+  ansible.builtin.service:
+    name: dynamik
+    state: restarted
+    enabled: true

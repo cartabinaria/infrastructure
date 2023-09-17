@@ -19,3 +19,9 @@
   tasks:
     - name: Setup bot
       ansible.builtin.import_tasks: tasks/bot.yaml
+
+- name: Dynamik
+  hosts: dynamik
+  tasks:
+    - name: Setup dynamik
+      ansible.builtin.import_tasks: tasks/dynamik.yaml

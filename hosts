@@ -11,3 +11,7 @@ admstaff:
       ansible_host: 130.136.3.71
       ansible_port: 2222
       ansible_user: debian
+    dynamik:
+      ansible_host: 130.136.3.72
+      ansible_port: 2222
+      ansible_user: debian

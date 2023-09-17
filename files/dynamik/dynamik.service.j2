@@ -1,0 +1,18 @@
+[Unit]
+Description=CSUnibo Dynamik website
+Documentation=https://github.com/csunibo/dynamik
+
+After=network.target
+
+[Service]
+User=dynamik
+Group=dynamik
+ExecStart=node build
+WorkingDirectory=/opt/dynamik/source
+ReadWriteDirectories=/opt/dynamik/source
+
+Environment="PORT=80"
+Environment="HOST=localhost"
+
+[Install]
+WantedBy=multi-user.target
