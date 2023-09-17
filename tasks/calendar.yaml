@@ -35,6 +35,7 @@
     publish: 8080:8080
     state: started
     recreate: false
+    timezone: Europe/Rome
 
 - name: Check if the calendar is up
   block:
