@@ -10,32 +10,18 @@
     - in
     - out
 
-- name: Add the NodeSource apt repository
+- name: Set timezone to Europe/Rome
   become: true
-  block:
-    - name: Download the NodeSource key
-      ansible.builtin.get_url:
-        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
-        dest: /etc/apt/trusted.gpg.d/nodesource.asc
+  community.general.timezone:
+    name: Europe/Rome
 
-    - name: Add the NodeSource repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
-        state: present
-
-    - name: Add the NodeSource src repository
-      ansible.builtin.apt_repository:
-        repo: "deb-src [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
-        state: present
-
-- name: Install acl, libcap2-bin, git and node
+- name: Install acl, libcap2-bin, git
   become: true
   ansible.builtin.package:
     name:
       - acl # needed to become the calendar user
-      - libcap2-bin # to set the capabilities for the node binary
+      - libcap2-bin # to set the capabilities for the go binary
       - git
-      - nodejs
     state: latest
     update_cache: true
 
@@ -46,7 +32,53 @@
     system: true
     name: calendar
     home: /opt/calendar
-    shell: /usr/sbin/nologin
+    shell: /bin/bash
+
+- name: Define Go Version
+  ansible.builtin.set_fact:
+    go_version: 1.21.1
+
+- name: Check if go is installed
+  become: true
+  ansible.builtin.stat:
+    path: /opt/calendar/go
+  register: go_installed
+
+- name: Check if go match the required version
+  when: go_installed.stat.exists
+  block: 
+  - name: Get the installed version
+    become: true
+    ansible.builtin.command: /opt/calendar/go/bin/go version
+    register: go_installed_version
+
+  - name: Remove go dir if the version does not match
+    when: not go_version in go_installed_version.stdout
+    become: true
+    ansible.builtin.file:
+      path: /opt/calendar/go
+      state: absent
+  
+  - name: Make go reinstall
+    when: not go_version in go_installed_version.stdout
+    ansible.builtin.set_fact:
+      need_to_reinstall_go: true
+
+- name: Install Go Binary
+  become: true
+  become_user: calendar
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    dest: /opt/calendar
+    remote_src: true
+  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  register: go_has_been_reinstalled
+
+- name: Install pnpm
+  become: true
+  become_user: calendar
+  ansible.builtin.shell: |
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
 
 - name: Clone the UniboCalendar project
   become: true
@@ -54,16 +86,44 @@
   ansible.builtin.git:
     repo: https://github.com/VaiTon/UniboCalendar
     dest: /opt/calendar/source
+    version: main
+    single_branch: true
+  register: git_result
 
-- name: Install packages with npm
+- name: Install the dependencies with pnpm
   become: true
   become_user: calendar
-  community.general.npm:
-    path: /opt/calendar/source
+  ansible.builtin.shell: |
+    /opt/calendar/.local/share/pnpm/pnpm install
+  args:
+    chdir: /opt/calendar/source
+    executable: /bin/bash
 
-- name: Allow the node binary to listen on low ports
+- name: Run css:build with pnpm
   become: true
-  ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
+  become_user: calendar
+  ansible.builtin.shell: |
+    /opt/calendar/.local/share/pnpm/pnpm run css:build
+  args:
+    chdir: /opt/calendar/source
+    executable: /bin/bash
+
+- name: Build Calendar with go
+  # when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  become: true
+  become_user: calendar
+  ansible.builtin.shell:
+    chdir: /opt/calendar/source
+    cmd: /opt/calendar/go/bin/go build
+  args:
+    chdir: /opt/calendar/source
+    executable: /bin/bash
+  register: bot_has_been_built
+
+- name: Allow the go binary to listen on low ports
+  become: true
+  ansible.builtin.shell: |
+    setcap 'cap_net_bind_service=+ep' /opt/calendar/source/unibocalendar
 
 - name: Copy the systemd service
   become: true

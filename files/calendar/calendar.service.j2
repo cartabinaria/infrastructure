@@ -7,12 +7,12 @@ After=network.target
 [Service]
 User=calendar
 Group=calendar
-ExecStart=npm start
+ExecStart=/opt/calendar/source/unibocalendar
 WorkingDirectory=/opt/calendar/source
 ReadWriteDirectories=/opt/calendar/source
 
 Environment="PORT=80"
-Environment="BIND_ADDR=0.0.0.0"
+Environment="GIN_MODE=release"
 
 [Install]
 WantedBy=multi-user.target
