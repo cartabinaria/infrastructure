@@ -11,7 +11,7 @@
     - out
 
 - name: Add the NodeSource apt repository
-  become: yes
+  become: true
   block:
     - name: Download the NodeSource key
       ansible.builtin.get_url:
@@ -29,7 +29,7 @@
         state: present
 
 - name: Install acl, libcap2-bin, git and node
-  become: yes
+  become: true
   ansible.builtin.package:
     name:
       - acl # needed to become the calendar user
@@ -37,10 +37,10 @@
       - git
       - nodejs
     state: latest
-    update_cache: yes
+    update_cache: true
 
 - name: Create the calendar user
-  become: yes
+  become: true
   ansible.builtin.user:
     state: present
     system: true
@@ -49,36 +49,36 @@
     shell: /usr/sbin/nologin
 
 - name: Clone the UniboCalendar project
-  become: yes
+  become: true
   become_user: calendar
   ansible.builtin.git:
     repo: https://github.com/VaiTon/UniboCalendar
     dest: /opt/calendar/source
 
 - name: Install packages with npm
-  become: yes
+  become: true
   become_user: calendar
   community.general.npm:
     path: /opt/calendar/source
 
 - name: Allow the node binary to listen on low ports
-  become: yes
+  become: true
   ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
 
 - name: Copy the systemd service
-  become: yes
+  become: true
   ansible.builtin.template:
     src: files/calendar/calendar.service.j2
     dest: /etc/systemd/system/calendar.service
 
 - name: Reload the systemd daemon
-  become: yes
+  become: true
   ansible.builtin.service:
     daemon_reload: true
 
 - name: Restart and enable the calendar service
-  become: yes
+  become: true
   ansible.builtin.service:
     name: calendar
     state: restarted
-    enabled: yes
+    enabled: true
