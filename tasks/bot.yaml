@@ -1,3 +1,8 @@
+- name: Set timezone to Europe/Rome
+  become: true
+  community.general.timezone:
+    name: Europe/Rome
+
 - name: Define Go Version
   ansible.builtin.set_fact:
     go_version: 1.20.2
