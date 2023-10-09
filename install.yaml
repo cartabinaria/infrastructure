@@ -8,20 +8,22 @@
     - name: Setup security
       ansible.builtin.import_tasks: tasks/security.yaml
 
-- name: Calendar
+- name: Setup calendar
   hosts: calendar
   tasks:
-    - name: Setup calendar
-      ansible.builtin.import_tasks: tasks/calendar.yaml
+    - ansible.builtin.import_tasks: tasks/calendar.yaml
 
-- name: Bot
+- name: Setup informabot
   hosts: bot
   tasks:
-    - name: Setup bot
-      ansible.builtin.import_tasks: tasks/bot.yaml
+    - ansible.builtin.import_tasks: tasks/bot.yaml
 
-- name: Dynamik
+- name: Setup dynamik
   hosts: dynamik
   tasks:
-    - name: Setup dynamik
-      ansible.builtin.import_tasks: tasks/dynamik.yaml
+    - ansible.builtin.import_tasks: tasks/dynamik.yaml
+
+- name: Setup fileseeker
+  hosts: fileseeker
+  tasks:
+    - ansible.builtin.import_tasks: tasks/fileseeker.yaml

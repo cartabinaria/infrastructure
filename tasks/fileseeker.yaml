@@ -1,0 +1,123 @@
+- name: Allow TCP on HTTP from the proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    direction: "{{ item }}"
+    from_ip: "{{ http_proxy }}"
+    port: 80
+    proto: tcp
+  loop:
+    - in
+    - out
+
+- name: Set timezone to Europe/Rome
+  become: true
+  community.general.timezone:
+    name: Europe/Rome
+
+- name: Install acl, libcap2-bin, git
+  become: true
+  ansible.builtin.package:
+    name:
+      - acl # needed to become the fileseeker user
+      - libcap2-bin # to set the capabilities for the go binary
+      - git
+    state: latest
+    update_cache: true
+
+- name: Create the fileseeker user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: fileseeker
+    home: /opt/fileseeker
+    shell: /bin/bash
+
+- name: Define Go Version
+  ansible.builtin.set_fact:
+    go_version: 1.21.1
+
+- name: Check if go is installed
+  become: true
+  ansible.builtin.stat:
+    path: /opt/fileseeker/go
+  register: go_installed
+
+- name: Check if go match the required version
+  when: go_installed.stat.exists
+  block:
+    - name: Get the installed version
+      become: true
+      ansible.builtin.command: /opt/fileseeker/go/bin/go version
+      register: go_installed_version
+
+    - name: Remove go dir if the version does not match
+      when: not go_version in go_installed_version.stdout
+      become: true
+      ansible.builtin.file:
+        path: /opt/fileseeker/go
+        state: absent
+
+    - name: Make go reinstall
+      when: not go_version in go_installed_version.stdout
+      ansible.builtin.set_fact:
+        need_to_reinstall_go: true
+
+- name: Install Go Binary
+  become: true
+  become_user: fileseeker
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    dest: /opt/fileseeker
+    remote_src: true
+  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  register: go_has_been_reinstalled
+
+- name: Clone the fileseeker project
+  become: true
+  become_user: fileseeker
+  ansible.builtin.git:
+    repo: https://github.com/csunibo/fileseeker.git
+    dest: /opt/fileseeker/source
+    recursive: true
+    version: main
+    single_branch: true
+  register: git_result
+
+- name: Build fileseeker with go
+  # when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  become: true
+  become_user: fileseeker
+  ansible.builtin.shell:
+    chdir: /opt/fileseeker/source
+    cmd: /opt/fileseeker/go/bin/go build
+  args:
+    chdir: /opt/fileseeker/source
+    executable: /bin/bash
+  register: bot_has_been_built
+
+- name: Allow the go binary to listen on low ports
+  become: true
+  ansible.builtin.shell: |
+    setcap 'cap_net_bind_service=+ep' /opt/fileseeker/source/fileseeker
+
+- name: Copy the systemd service
+  become: true
+  ansible.builtin.template:
+    src: files/fileseeker/fileseeker.service.j2
+    dest: /etc/systemd/system/fileseeker.service
+  register: systemd_service_result
+
+- name: Reload the systemd daemon
+  become: true
+  ansible.builtin.service:
+    daemon_reload: true
+  when: systemd_service_result.changed
+
+- name: Restart and enable the fileseeker service
+  become: true
+  ansible.builtin.service:
+    name: fileseeker
+    state: restarted
+    enabled: true

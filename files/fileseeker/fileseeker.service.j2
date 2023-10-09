@@ -1,0 +1,18 @@
+[Unit]
+Description=Unibo Fileseeker
+Documentation=https://github.com/csunibo/fileseeker
+
+After=network.target
+
+[Service]
+User=fileseeker
+Group=fileseeker
+ExecStart=/opt/fileseeker/source/fileseeker
+WorkingDirectory=/opt/fileseeker/source
+ReadWriteDirectories=/opt/fileseeker/source
+
+Environment="ADDR=0.0.0.0:80"
+Environment="PROXY=true"
+
+[Install]
+WantedBy=multi-user.target
