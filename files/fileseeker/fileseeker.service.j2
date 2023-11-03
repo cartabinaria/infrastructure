@@ -7,12 +7,13 @@ After=network.target
 [Service]
 User=fileseeker
 Group=fileseeker
-ExecStart=/opt/fileseeker/source/fileseeker
 WorkingDirectory=/opt/fileseeker/source
 ReadWriteDirectories=/opt/fileseeker/source
-
-Environment="ADDR=0.0.0.0:80"
-Environment="PROXY=true"
+ExecStart=/opt/fileseeker/source/fileseeker \
+    --basepath "http://csunibo.github.io" \
+    --addr "0.0.0.0:80" \
+    --proxy \
+    --human
 
 [Install]
 WantedBy=multi-user.target

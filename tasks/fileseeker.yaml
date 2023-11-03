@@ -121,3 +121,9 @@
     name: fileseeker
     state: restarted
     enabled: true
+
+- name: Wait for the service to be up
+  become: true
+  ansible.builtin.wait_for:
+    port: 80
+    host: "{{ ansible_host }}"
