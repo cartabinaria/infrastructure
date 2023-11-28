@@ -5,7 +5,7 @@
 
 - name: Define Go Version
   ansible.builtin.set_fact:
-    go_version: 1.20.2
+    go_version: 1.21.0
 
 - name: Install acl, git
   become: true
@@ -40,14 +40,14 @@
     register: go_installed_version
 
   - name: Remove go dir if the version does not match
-    when: not go_version in go_installed_version.stdout
+    when: "not 'go_version' in go_installed_version.stdout"
     become: true
     ansible.builtin.file:
       path: /opt/bot/go
       state: absent
   
   - name: Make go reinstall
-    when: not go_version in go_installed_version.stdout
+    when: "not 'go_version' in go_installed_version.stdout"
     ansible.builtin.set_fact:
       need_to_reinstall_go: true
 
