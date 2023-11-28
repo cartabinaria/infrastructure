@@ -8,6 +8,7 @@ After=network.target
 User=bot
 Group=bot
 Environment=TOKEN={{ bot_token }}
+Environment=GOTRACEBACK=crash
 ExecStart=/opt/bot/bot 
 WorkingDirectory=/opt/bot/source/
 ReadWriteDirectories=/opt/bot/source
