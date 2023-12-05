@@ -61,6 +61,22 @@
   when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
   register: go_has_been_reinstalled
 
+- name: Check if the repository is present
+  become: true
+  become_user: bot
+  ansible.builtin.stat:
+    path: /opt/bot/source/json/groups.json
+  register: groupsFile
+   
+- name: Copy groups file to tmp
+  become: true
+  become_user: bot
+  ansible.builtin.copy:
+    src: /opt/bot/source/json/groups.json
+    dest: /tmp/groups.json
+    remote_src: true
+  when: groupsFile.stat.exists
+
 - name: Clone a github repository
   become: true
   become_user: bot
@@ -70,6 +86,15 @@
     version: main
     single_branch: true
   register: git_result
+
+- name: Copy back groups file
+  become: true
+  become_user: bot
+  ansible.builtin.copy:
+    src: /tmp/groups.json
+    dest: /opt/bot/source/json/groups.json
+    remote_src: true
+  when: groupsFile.stat.exists
 
 - name: Read the bot token
   ansible.builtin.set_fact:
