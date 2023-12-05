@@ -70,7 +70,6 @@
    
 - name: Copy groups file to tmp
   become: true
-  become_user: bot
   ansible.builtin.copy:
     src: /opt/bot/source/json/groups.json
     dest: /tmp/groups.json
@@ -89,11 +88,13 @@
 
 - name: Copy back groups file
   become: true
-  become_user: bot
   ansible.builtin.copy:
     src: /tmp/groups.json
     dest: /opt/bot/source/json/groups.json
     remote_src: true
+    owner: bot
+    group: bot
+    mode: 0666
   when: groupsFile.stat.exists
 
 - name: Read the bot token
