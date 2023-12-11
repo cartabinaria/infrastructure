@@ -1,0 +1,120 @@
+- name: Install acl, hugo, lighttpd
+  become: true
+  ansible.builtin.package:
+    name:
+      - acl
+      - hugo
+      - lighttpd
+    state: latest
+    update_cache: true
+
+- name: Create the csunibo user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: csunibo
+    home: /opt/csunibo
+    shell: /usr/sbin/nologin
+
+- name: Allow TCP on HTTP(S)
+  become: true
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ http_proxy }}" # only proxy can
+    port: 8080
+    proto: tcp
+
+- name: Create {{ item }} directory for website
+  become: true
+  ansible.builtin.file:
+    path: /opt/hugo
+    state: directory
+    owner: csunibo
+    group: csunibo
+  with_items: 
+    - /opt/hugo
+    - /opt/hugo/csunibo
+
+- name: Define Go Version
+  ansible.builtin.set_fact:
+    go_version: 1.20.2
+
+- name: Check if go is installed
+  become: true
+  ansible.builtin.stat:
+    path: /opt/hugo/go
+  register: go_installed
+
+- name: Check if go match the required version
+  when: go_installed.stat.exists
+  block: 
+  - name: Get the installed version
+    become: true
+    ansible.builtin.command: /opt/hugo/go/bin/go version
+    register: go_installed_version
+
+  - name: Remove go dir if the version does not match
+    when: not go_version in go_installed_version.stdout
+    become: true
+    ansible.builtin.file:
+      path: /opt/hugo/go
+      state: absent
+  
+  - name: Make go reinstall
+    when: not go_version in go_installed_version.stdout
+    ansible.builtin.set_fact:
+      need_to_reinstall_go: true
+
+- name: Install Go Binary
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    dest: /opt/hugo
+    remote_src: true
+  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  register: go_has_been_reinstalled
+
+- name: Clone csunibo website repository
+  become: true
+  become_user: csunibo
+  ansible.builtin.git:
+    repo: https://github.com/csunibo/csunibo.github.io
+    dest: /opt/hugo/csunibo/source
+    update: true
+    force: yes
+
+- name: Change base url for csunibo website
+  become: true
+  ansible.builtin.lineinfile:
+    path: /opt/hugo/csunibo/source/config/_default/config.yaml
+    regexp: 'baseURL'
+    line: "baseURL: '/'"
+
+- name: Remove public directory
+  become: true
+  ansible.builtin.file:
+    path: /opt/hugo/csunibo/source/public
+    state: absent
+
+- name: Build the csunibo website
+  become: true
+  become_user: csunibo
+  ansible.builtin.command:
+    cmd: hugo
+    chdir: /opt/hugo/csunibo/source
+  environment:
+    PATH: "/opt/hugo/go/bin:{{ ansible_env.PATH }}"
+
+- name: Copy lighttpd configuration file
+  become: true
+  ansible.builtin.copy:
+    src: files/csunibo/lighttpd.conf
+    dest: /etc/lighttpd/lighttpd.conf
+    backup: yes
+
+- name: restart lighttpd service
+  become: true
+  ansible.builtin.service:
+    name: lighttpd
+    state: restarted

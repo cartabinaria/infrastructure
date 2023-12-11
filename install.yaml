@@ -27,3 +27,8 @@
   hosts: fileseeker
   tasks:
     - ansible.builtin.import_tasks: tasks/fileseeker.yaml
+
+- name: Setup csunibo
+  hosts: csunibo
+  tasks:
+    - ansible.builtin.import_tasks: tasks/csunibo.yaml
