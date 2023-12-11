@@ -23,6 +23,7 @@
   become: true
   community.general.ufw:
     rule: allow
+    from_ip: "{{ http_proxy }}" # only proxy can
     port: 8080
     proto: tcp
 
