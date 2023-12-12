@@ -59,6 +59,7 @@
   ansible.builtin.git:
     repo: https://github.com/csunibo/dynamik
     dest: /opt/dynamik/source
+    version: main
     force: true
 
 - name: Install pnpm
