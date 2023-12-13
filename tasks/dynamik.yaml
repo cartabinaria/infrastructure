@@ -62,6 +62,12 @@
     version: main
     force: true
 
+- name: Clean up tmp directories
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell:
+    rm -rf /tmp/tmp.*
+
 - name: Install pnpm
   become: true
   become_user: dynamik
