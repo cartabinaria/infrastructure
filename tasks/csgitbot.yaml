@@ -18,19 +18,6 @@
     home: /opt/bot
     shell: /usr/sbin/nologin
 
-- name: Get Python version
-  ansible.builtin.command:
-    cmd: python3 --version
-  register: python_version
-
-- name: Set Python version variable
-  ansible.builtin.set_fact:
-    python_version: "{{ python_version.stdout_lines[0] }}"
-
-- name: Print Python version
-  ansible.builtin.debug:
-    var: python_version
-
 - name: Clone a github repository
   become: yes
   become_user: bot
@@ -41,7 +28,7 @@
     force: yes
   register: git_result
 
-- name: check if virtual environment exists
+- name: Check if virtual environment exists
   ansible.builtin.stat:
     path: /opt/bot/venv
   register: venv_result
@@ -52,15 +39,6 @@
   ansible.builtin.command:
     cmd: python3 -m venv /opt/bot/venv
   when: not venv_result.stat.exists
-
-- name: Run 'which python3' command
-  ansible.builtin.command:
-    cmd: which python3
-  register: python3_path
-
-- name: Print the output of 'which python3'
-  ansible.builtin.debug:
-    var: python3_path.stdout
 
 - name: Upgrade pip inside virtual environment
   become: yes
@@ -106,7 +84,7 @@
 - name: Copy the env file
   become: yes
   ansible.builtin.template:
-    src: files/csgitbot/.env.j2
+    src: files/csgitbot/env.j2
     dest: /opt/bot/source/.env
 
 - name: Reload the systemd daemon
