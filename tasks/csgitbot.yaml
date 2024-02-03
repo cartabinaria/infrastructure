@@ -91,16 +91,10 @@
     regexp: '^redirect_uri ='
     line: 'redirect_uri = http://{{ ansible_default_ipv4.address }}:8000/oauth/redirect'
 
-- name: Read the bot token
+- name: Read the bot secrets
   ansible.builtin.set_fact:
     github_token: "{{ lookup('file', 'passwords/csgitbot_github_secret') }}"
-
-- name: Read the bot token
-  ansible.builtin.set_fact:
     client_id: "{{ lookup('file', 'passwords/csgitbot_id') }}"
-
-- name: Read the bot token
-  ansible.builtin.set_fact:
     client_secret: "{{ lookup('file', 'passwords/csgitbot_secret') }}"
 
 - name: Copy the systemd service
