@@ -1,5 +1,5 @@
 [Unit]
-Description=Informabot
+Description=CSGitbot
 Documentation=https://github.com/csunibo/csgitbot.git
 
 After=network.target
