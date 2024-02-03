@@ -1,10 +1,11 @@
-
-- name: Install acl, git
+- name: Install acl, git, python3-pip and python3-venv
   become: yes
   ansible.builtin.package:
     name:
       - acl 
       - git
+      - python3-pip
+      - python3-venv
     state: latest
     update_cache: yes
 
@@ -30,82 +31,6 @@
   ansible.builtin.debug:
     var: python_version
 
-- name: stat python3.10 directory
-  ansible.builtin.stat:
-    path: /usr/local/bin/python3.10
-  register: python3_10
-
-- name: set has python3.10
-  ansible.builtin.set_fact:
-    has_python3_10: "{{ python3_10.stat.exists or '3.10' in python_version }}"
-
-- name: Install python dependencies
-  become: yes
-  apt:
-    name:
-      - make
-      - build-essential
-      - libssl-dev
-      - zlib1g-dev
-      - libbz2-dev
-      - libreadline-dev
-      - libsqlite3-dev
-      - wget
-      - curl
-      - llvm
-      - libncurses5-dev
-      - libncursesw5-dev
-      - xz-utils
-      - tk-dev
-      - libffi-dev
-      - liblzma-dev
-    state: present
-  when: not has_python3_10
-
-- name: download tar file
-  become: yes
-  become_user: bot
-  ansible.builtin.unarchive:
-    src: https://www.python.org/ftp/python/3.10.10/Python-3.10.10.tgz
-    dest: /opt/bot/
-    remote_src: yes
-  when: not has_python3_10
-  
-- name: Configure python
-  become: yes
-  ansible.builtin.command:
-    cmd: ./configure --enable-optimizations --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu && make install
-    chdir: /opt/bot/Python-3.10.10
-  when: not has_python3_10
-
-- name: Configure python
-  become: yes
-  ansible.builtin.command:
-    cmd: make install
-    chdir: /opt/bot/Python-3.10.10
-  when: not has_python3_10
-
-- name: Check if poetry is installed
-  become: yes
-  ansible.builtin.stat:
-    path: /opt/bot/.local/bin/poetry
-  register: poetry_installed
-
-- name: Download Poetry Install script
-  become: yes
-  become_user: bot
-  ansible.builtin.get_url:
-    url: https://install.python-poetry.org 
-    dest: /opt/bot/install-poetry.py
-  when: not poetry_installed.stat.exists
-
-- name: Install Poetry Binary
-  become: yes
-  become_user: bot
-  ansible.builtin.command:
-    cmd: python3 /opt/bot/install-poetry.py --yes
-  when: not poetry_installed.stat.exists
-
 - name: Clone a github repository
   become: yes
   become_user: bot
@@ -116,12 +41,41 @@
     force: yes
   register: git_result
 
-- name: Install dependencies
+- name: check if virtual environment exists
+  ansible.builtin.stat:
+    path: /opt/bot/venv
+  register: venv_result
+
+- name: Create a python virtual environment
   become: yes
   become_user: bot
   ansible.builtin.command:
-    cmd: /opt/bot/.local/bin/poetry install
-    chdir: /opt/bot/source
+    cmd: python3 -m venv /opt/bot/venv
+  when: not venv_result.stat.exists
+
+- name: Run 'which python3' command
+  ansible.builtin.command:
+    cmd: which python3
+  register: python3_path
+
+- name: Print the output of 'which python3'
+  ansible.builtin.debug:
+    var: python3_path.stdout
+
+- name: Upgrade pip inside virtual environment
+  become: yes
+  become_user: bot
+  ansible.builtin.command:
+    cmd: /opt/bot/venv/bin/pip install --upgrade pip
+
+- name: Install python dependencies
+  become: yes
+  become_user: bot
+  ansible.builtin.pip:
+    name: /opt/bot/source/requirements.txt
+    state: present
+    virtualenv: /opt/bot/venv
+    extra_args: -r
 
 - name: Substitute repo owner line in config.init.py
   become: yes
@@ -130,9 +84,24 @@
     regexp: '^repo_owner ='
     line: 'repo_owner = csunibo'
 
+- name: Substitute redirect uri line in config.init.py
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /opt/bot/source/config.ini
+    regexp: '^redirect_uri ='
+    line: 'redirect_uri = http://{{ ansible_default_ipv4.address }}:8000/oauth/redirect'
+
 - name: Read the bot token
   ansible.builtin.set_fact:
-    bot_token: "{{ lookup('file', 'passwords/csgitbot_token') }}"
+    github_token: "{{ lookup('file', 'passwords/csgitbot_github_secret') }}"
+
+- name: Read the bot token
+  ansible.builtin.set_fact:
+    client_id: "{{ lookup('file', 'passwords/csgitbot_id') }}"
+
+- name: Read the bot token
+  ansible.builtin.set_fact:
+    client_secret: "{{ lookup('file', 'passwords/csgitbot_secret') }}"
 
 - name: Copy the systemd service
   become: yes

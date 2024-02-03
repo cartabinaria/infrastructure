@@ -7,7 +7,7 @@ After=network.target
 [Service]
 User=bot
 Group=bot
-ExecStart=/opt/bot/.local/bin/poetry run start
+ExecStart=/opt/bot/venv/bin/python3 csgitbot.py
 WorkingDirectory=/opt/bot/source
 ReadWriteDirectories=/opt/bot/source
 
