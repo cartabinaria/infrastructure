@@ -32,3 +32,9 @@
   hosts: csunibo
   tasks:
     - ansible.builtin.import_tasks: tasks/csunibo.yaml
+
+- name: Setup CSGitBot
+  hosts: csgitbot
+  tasks:
+    - name: Setup csgitbot
+      ansible.builtin.import_tasks: tasks/csgitbot.yaml

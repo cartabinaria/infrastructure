@@ -1,0 +1,15 @@
+[Unit]
+Description=CSGitbot
+Documentation=https://github.com/csunibo/csgitbot.git
+
+After=network.target
+
+[Service]
+User=bot
+Group=bot
+ExecStart=/opt/bot/venv/bin/python3 csgitbot.py
+WorkingDirectory=/opt/bot/source
+ReadWriteDirectories=/opt/bot/source
+
+[Install]
+WantedBy=multi-user.target

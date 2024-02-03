@@ -1,0 +1,110 @@
+- name: Install acl, git, python3-pip and python3-venv
+  become: yes
+  ansible.builtin.package:
+    name:
+      - acl 
+      - git
+      - python3-pip
+      - python3-venv
+    state: latest
+    update_cache: yes
+
+- name: Create the bot user
+  become: yes
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: bot
+    home: /opt/bot
+    shell: /usr/sbin/nologin
+
+- name: Clone a github repository
+  become: yes
+  become_user: bot
+  ansible.builtin.git:
+    repo: "https://github.com/csunibo/csgitbot"
+    dest: /opt/bot/source
+    version: main
+    force: yes
+  register: git_result
+
+- name: Check if virtual environment exists
+  ansible.builtin.stat:
+    path: /opt/bot/venv
+  register: venv_result
+
+- name: Create a python virtual environment
+  become: yes
+  become_user: bot
+  ansible.builtin.command:
+    cmd: python3 -m venv /opt/bot/venv
+  when: not venv_result.stat.exists
+
+- name: Upgrade pip inside virtual environment
+  become: yes
+  become_user: bot
+  ansible.builtin.command:
+    cmd: /opt/bot/venv/bin/pip install --upgrade pip
+
+- name: Install python dependencies
+  become: yes
+  become_user: bot
+  ansible.builtin.pip:
+    name: /opt/bot/source/requirements.txt
+    state: present
+    virtualenv: /opt/bot/venv
+    extra_args: -r
+
+- name: Substitute repo owner line in config.init.py
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /opt/bot/source/config.ini
+    regexp: '^repo_owner ='
+    line: 'repo_owner = csunibo'
+
+- name: Substitute redirect uri line in config.init.py
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /opt/bot/source/config.ini
+    regexp: '^redirect_uri ='
+    line: 'redirect_uri = http://{{ ansible_default_ipv4.address }}:8000/oauth/redirect'
+
+- name: Read the bot secrets
+  ansible.builtin.set_fact:
+    github_token: "{{ lookup('file', 'passwords/csgitbot_github_secret') }}"
+    client_id: "{{ lookup('file', 'passwords/csgitbot_id') }}"
+    client_secret: "{{ lookup('file', 'passwords/csgitbot_secret') }}"
+
+- name: Copy the systemd service
+  become: yes
+  ansible.builtin.copy:
+    src: files/csgitbot/bot.service
+    dest: /etc/systemd/system/bot.service
+
+- name: Copy the env file
+  become: yes
+  ansible.builtin.template:
+    src: files/csgitbot/env.j2
+    dest: /opt/bot/source/.env
+
+- name: Reload the systemd daemon
+  become: yes
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Start and enable the bot service
+  become: yes
+  ansible.builtin.service:
+    name: bot 
+    state: started 
+    enabled: true
+  when: not git_result.changed
+
+- name: Restart and enable the bot service
+  become: yes
+  ansible.builtin.service:
+    name: bot 
+    state: restarted 
+    enabled: true
+  when: git_result.changed
+    
