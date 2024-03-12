@@ -76,6 +76,13 @@
     regexp: '^environment ='
     line: 'environment = production'
 
+- name: Use github app in config.ini
+  become: true
+  ansible.builtin.lineinfile:
+    path: /opt/bot/source/config.ini
+    regexp: '^is_github_app ='
+    line: 'is_github_app = true'
+
 - name: Read the bot secrets
   ansible.builtin.set_fact:
     github_token: "{{ lookup('file', 'passwords/csgitbot_github_secret') }}"
