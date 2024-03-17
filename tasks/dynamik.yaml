@@ -74,6 +74,15 @@
   ansible.builtin.shell: |
     curl -fsSL https://get.pnpm.io/install.sh | sh -
 
+
+## TMP UGLY FIX
+- name: tmp fix
+  become: true
+  become_user: dynamik
+  ansible.builtin.lineinfile:
+    path: /opt/dynamik/source/.npmrc
+    line: use-node-version=20.5.1
+
 - name: Install the dependencies with pnpm
   become: true
   become_user: dynamik
