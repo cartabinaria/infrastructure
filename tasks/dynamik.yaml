@@ -91,6 +91,9 @@
   args:
     chdir: /opt/dynamik/source
     executable: /bin/bash
+  environment:
+    # This is needed as our version on pnpm is 9.0.5 and dynamik use 8.10.0
+    COREPACK_ENABLE_STRICT: '0' 
 
 - name: Build with pnpm
   become: true
@@ -100,6 +103,8 @@
   environment:
     CSUNIBO_DEPLOY: "true"
     VITE_UPLD_URL: "0.0.0.0"
+    # This is needed as our version on pnpm is 9.0.5 and dynamik use 8.10.0
+    COREPACK_ENABLE_STRICT: '0' 
   args:
     chdir: /opt/dynamik/source
     executable: /bin/bash
