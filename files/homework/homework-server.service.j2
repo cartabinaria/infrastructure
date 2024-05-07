@@ -1,0 +1,15 @@
+[Unit]
+Description=Homework server
+Documentation=https://github.com/csunibo/homework.git
+
+After=network.target
+
+[Service]
+User=homework
+Group=homework
+ExecStart=node /opt/homework/source/server.js
+WorkingDirectory=/opt/homework/source/
+ReadWriteDirectories=/opt/homework/source
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,114 @@
+- name: Save bans if we are doing a re-deploy
+  become: true
+  block:
+    - name: Check if bans already present
+      ansible.builtin.stat:
+        path: /opt/homework/source/static/bans.json 
+      register: bans
+
+    - name: Copy bans if present
+      when: bans.stat.exists
+      ansible.builtin.copy:
+        src: /opt/homework/source/static/bans.json
+        remote_src: true
+        dest: /tmp/bans.json
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: 
+      - git
+      - acl 
+      - nodejs 
+      - npm 
+    state: latest
+
+- name: Create the homework user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: homework
+    home: /opt/homework
+    shell: /usr/sbin/nologin
+
+- name: Clone the github repository
+  become: true
+  become_user: homework
+  ansible.builtin.git:
+    repo: "https://github.com/csunibo/homework"
+    dest: /opt/homework/source
+    version: main
+    single_branch: true
+    force: true
+
+- name: Install npm dependencies
+  become: true
+  become_user: homework
+  ansible.builtin.command:
+    npm install
+  args:
+    chdir: /opt/homework/source
+
+- name: Build client
+  become: true
+  become_user: homework
+  ansible.builtin.command:
+    npm run build
+  args:
+    chdir: /opt/homework/source
+
+- name: Copy old bans
+  become: true
+  when: bans.stat.exists
+  ansible.builtin.copy:
+    src: /tmp/bans.json
+    remote_src: true
+    dest: /opt/homework/source/static/bans.json
+
+- name: Copy systemd server service
+  become: true
+  ansible.builtin.template:
+    src: files/homework/homework-server.service.j2
+    dest: /etc/systemd/system/homework-server.service
+
+- name: Copy systemd client service
+  become: true
+  ansible.builtin.template:
+    src: files/homework/homework-client.service.j2
+    dest: /etc/systemd/system/homework-client.service
+
+- name: Reload the systemd daemon
+  become: true
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Restart and enable the the server
+  become: true
+  ansible.builtin.service:
+    name: homework-server 
+    state: restarted 
+    enabled: true
+
+- name: Restart and enable the the client
+  become: true
+  ansible.builtin.service:
+    name: homework-client
+    state: restarted 
+    enabled: true
+
+- name: Ufw allow 3000 from proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ http_proxy }}"
+    port: 3000
+    proto: tcp
+
+- name: Ufw allow 3001 from proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ http_proxy }}"
+    port: 3001
+    proto: tcp

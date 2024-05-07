@@ -5,6 +5,8 @@
   tasks:
     - name: Change ssh port
       ansible.builtin.import_tasks: tasks/ssh.yaml
+    - name: Ufw
+      ansible.builtin.import_tasks: tasks/ufw.yaml
 
 - name: Setup calendar
   hosts: calendar
@@ -36,3 +38,9 @@
   tasks:
     - name: Setup csgitbot
       ansible.builtin.import_tasks: tasks/csgitbot.yaml
+
+- name: Setup Homework
+  hosts: homework
+  tasks:
+    - name: Setup Homework
+      ansible.builtin.import_tasks: tasks/homework.yaml

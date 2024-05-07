@@ -27,3 +27,7 @@ admstaff:
       ansible_host: 130.136.3.76
       ansible_port: 2222
       ansible_user: debian
+    homework:
+      ansible_host: 130.136.3.77
+      ansible_port: 2222
+      ansible_user: debian

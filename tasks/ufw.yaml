@@ -1,0 +1,12 @@
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: ufw 
+    state: latest
+
+- name: Allow openssh
+  become: true
+  community.general.ufw:
+    rule: allow
+    port: 2222
+    proto: tcp
