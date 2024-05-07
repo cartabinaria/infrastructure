@@ -5,8 +5,6 @@
   tasks:
     - name: Change ssh port
       ansible.builtin.import_tasks: tasks/ssh.yaml
-    - name: Setup security
-      ansible.builtin.import_tasks: tasks/security.yaml
 
 - name: Setup calendar
   hosts: calendar

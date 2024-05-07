@@ -1,5 +1,0 @@
-[DEFAULT]
-bantime = 86400
-[sshd]
-backend=systemd
-enabled = true
