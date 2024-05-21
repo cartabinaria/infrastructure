@@ -81,7 +81,7 @@
     repo: https://github.com/csunibo/fileseeker.git
     dest: /opt/fileseeker/source
     recursive: true
-    version: main
+    version: 826012f
     single_branch: true
   register: git_result
 
