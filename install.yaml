@@ -44,3 +44,9 @@
   tasks:
     - name: Setup Homework
       ansible.builtin.import_tasks: tasks/homework.yaml
+
+- name: Setup CSLogin
+  hosts: cslogin
+  tasks:
+    - name: Setup CSLogin
+      ansible.builtin.import_tasks: tasks/cslogin.yaml

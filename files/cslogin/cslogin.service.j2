@@ -1,0 +1,16 @@
+[Unit]
+Description=CSLogin
+Documentation=https://github.com/csunibo/auth
+
+After=network.target
+
+[Service]
+User=cslogin
+Group=cslogin
+Environment=GOTRACEBACK=crash
+ExecStart=/opt/cslogin/cslogin 
+WorkingDirectory=/opt/cslogin
+ReadWriteDirectories=/opt/cslogin
+
+[Install]
+WantedBy=multi-user.target
