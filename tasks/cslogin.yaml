@@ -1,0 +1,109 @@
+- name: Define Go Version
+  ansible.builtin.set_fact:
+    go_version: 1.22.4
+
+- name: Install acl, git
+  become: true
+  ansible.builtin.package:
+    name:
+      - acl 
+      - git
+    state: latest
+    update_cache: true
+
+- name: Create the cslogin user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: cslogin
+    home: /opt/cslogin
+    shell: /usr/sbin/nocslogin
+
+- name: Check if go is installed
+  become: true
+  ansible.builtin.stat:
+    path: /opt/cslogin/go
+  register: go_installed
+
+- name: Check if go match the required version
+  when: go_installed.stat.exists
+  block: 
+  - name: Get the installed version
+    become: true
+    ansible.builtin.command: /opt/cslogin/go/bin/go version
+    register: go_installed_version
+
+  - name: Remove go dir if the version does not match
+    when: "not 'go_version' in go_installed_version.stdout"
+    become: true
+    ansible.builtin.file:
+      path: /opt/cslogin/go
+      state: absent
+  
+  - name: Make go reinstall
+    when: "not 'go_version' in go_installed_version.stdout"
+    ansible.builtin.set_fact:
+      need_to_reinstall_go: true
+
+- name: Install Go Binary
+  become: true
+  become_user: cslogin
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    dest: /opt/cslogin
+    remote_src: true
+  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  register: go_has_been_reinstalled
+
+- name: Clone a github repository
+  become: true
+  become_user: cslogin
+  ansible.builtin.git:
+    repo: "https://github.com/csunibo/auth"
+    dest: /opt/cslogin/source
+    version: main
+    single_branch: true
+  register: git_result
+
+- name: Build GoBot
+  when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  become: true
+  become_user: cslogin
+  ansible.builtin.shell:
+    chdir: /opt/cslogin/source
+    cmd: /opt/cslogin/go/bin/go build -o /opt/cslogin/cslogin cmd/auth.go
+  register: cslogin_has_been_built
+
+- name: Copy the config file
+  become: true
+  ansible.builtin.template:
+    src: files/cslogin/config.toml.j2
+    dest: /opt/cslogin/config.toml
+
+- name: Copy the systemd service
+  become: true
+  ansible.builtin.template:
+    src: files/cslogin/cslogin.service.j2
+    dest: /etc/systemd/system/cslogin.service
+
+- name: Reload the systemd daemon
+  become: true
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Start and enable the cslogin service
+  become: true
+  ansible.builtin.service:
+    name: cslogin 
+    state: started 
+    enabled: true
+  when: not git_result.changed
+
+- name: Restart and enable the cslogin service
+  become: true
+  ansible.builtin.service:
+    name: cslogin 
+    state: restarted 
+    enabled: true
+  when: git_result.changed or cslogin_has_been_built.changed|default('false')
