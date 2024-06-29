@@ -8,26 +8,22 @@
     name:
       - acl 
       - git
-      - postgresql
     state: latest
     update_cache: true
 
-
-# DA FARE IL DB. Se lo lanciamo su una macchina vuota ovviamente non funzionerà
-
-- name: Create the cslogin user
+- name: Create the polleg user
   become: true
   ansible.builtin.user:
     state: present
     system: true
-    name: cslogin
-    home: /opt/cslogin
-    shell: /usr/sbin/nocslogin
+    name: polleg
+    home: /opt/polleg
+    shell: /usr/sbin/nopolleg
 
 - name: Check if go is installed
   become: true
   ansible.builtin.stat:
-    path: /opt/cslogin/go
+    path: /opt/polleg/go
   register: go_installed
 
 - name: Check if go match the required version
@@ -35,14 +31,14 @@
   block: 
   - name: Get the installed version
     become: true
-    ansible.builtin.command: /opt/cslogin/go/bin/go version
+    ansible.builtin.command: /opt/polleg/go/bin/go version
     register: go_installed_version
 
   - name: Remove go dir if the version does not match
     when: "not 'go_version' in go_installed_version.stdout"
     become: true
     ansible.builtin.file:
-      path: /opt/cslogin/go
+      path: /opt/polleg/go
       state: absent
   
   - name: Make go reinstall
@@ -52,62 +48,62 @@
 
 - name: Install Go Binary
   become: true
-  become_user: cslogin
+  become_user: polleg
   ansible.builtin.unarchive:
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
-    dest: /opt/cslogin
+    dest: /opt/polleg
     remote_src: true
   when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
   register: go_has_been_reinstalled
 
 - name: Clone a github repository
   become: true
-  become_user: cslogin
+  become_user: polleg
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/auth"
-    dest: /opt/cslogin/source
+    repo: "https://github.com/csunibo/polleg"
+    dest: /opt/polleg/source
     version: main
     single_branch: true
   register: git_result
 
-- name: Build cslogin
+- name: Build polleg
   when: git_result.changed or go_has_been_reinstalled.changed|default('false')
   become: true
-  become_user: cslogin
+  become_user: polleg
   ansible.builtin.shell:
-    chdir: /opt/cslogin/source
-    cmd: /opt/cslogin/go/bin/go build -o /opt/cslogin/cslogin cmd/auth.go
-  register: cslogin_has_been_built
+    chdir: /opt/polleg/source
+    cmd: /opt/polleg/go/bin/go build -o /opt/polleg/polleg cmd/polleg.go
+  register: polleg_has_been_built
 
 - name: Copy the config file
   become: true
   ansible.builtin.template:
-    src: files/cslogin/config.toml.j2
-    dest: /opt/cslogin/config.toml
+    src: files/polleg/config.toml.j2
+    dest: /opt/polleg/config.toml
 
 - name: Copy the systemd service
   become: true
   ansible.builtin.template:
-    src: files/cslogin/cslogin.service.j2
-    dest: /etc/systemd/system/cslogin.service
+    src: files/polleg/polleg.service.j2
+    dest: /etc/systemd/system/polleg.service
 
 - name: Reload the systemd daemon
   become: true
   ansible.builtin.service:
     daemon_reload: true
 
-- name: Start and enable the cslogin service
+- name: Start and enable the polleg service
   become: true
   ansible.builtin.service:
-    name: cslogin 
+    name: polleg 
     state: started 
     enabled: true
   when: not git_result.changed
 
-- name: Restart and enable the cslogin service
+- name: Restart and enable the polleg service
   become: true
   ansible.builtin.service:
-    name: cslogin 
+    name: polleg 
     state: restarted 
     enabled: true
-  when: git_result.changed or cslogin_has_been_built.changed|default('false')
+  when: git_result.changed or polleg_has_been_built.changed|default('false')
