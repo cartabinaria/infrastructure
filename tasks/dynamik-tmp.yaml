@@ -1,0 +1,128 @@
+- name: Allow TCP on HTTP from the proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    direction: "{{ item }}"
+    from_ip: "{{ http_proxy }}"
+    port: 80
+    proto: tcp
+  loop:
+    - in
+    - out
+
+- name: Add the NodeSource apt repository
+  become: true
+  block:
+    - name: Download the NodeSource key
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+        dest: /etc/apt/trusted.gpg.d/nodesource.asc
+
+    - name: Add the NodeSource repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Add the NodeSource src repository
+      ansible.builtin.apt_repository:
+        repo: "deb-src [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/nodesource.asc] https://deb.nodesource.com/node_18.x {{ ansible_distribution_release }} main"
+        state: present
+
+- name: Install acl, libcap2-bin, git and node
+  become: true
+  ansible.builtin.package:
+    name:
+      - acl # needed to become the dynamik user
+      - libcap2-bin # to set the capabilities for the node binary
+      - git
+      - nodejs
+      - vite
+    state: latest
+    update_cache: true
+
+- name: Allow the node binary to listen on low ports
+  become: true
+  ansible.builtin.shell: setcap 'cap_net_bind_service=+ep' /usr/bin/node
+
+- name: Create the dynamik user
+  become: true
+  ansible.builtin.user:
+    state: present
+    system: true
+    name: dynamik
+    home: /opt/dynamik
+    shell: /bin/bash
+
+- name: Clone the dynamik project
+  become: true
+  become_user: dynamik
+  ansible.builtin.git:
+    repo: https://github.com/csunibo/dynamik
+    dest: /opt/dynamik/source
+    version: newpolleg
+    force: true
+
+- name: Clean up tmp directories
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell:
+    rm -rf /tmp/tmp.*
+
+- name: Install pnpm
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: |
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+
+## TMP UGLY FIX
+- name: tmp fix
+  become: true
+  become_user: dynamik
+  ansible.builtin.lineinfile:
+    path: /opt/dynamik/source/.npmrc
+    line: use-node-version=20.5.1
+
+- name: Install the dependencies with pnpm
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: |
+    /opt/dynamik/.local/share/pnpm/pnpm install
+  args:
+    chdir: /opt/dynamik/source
+    executable: /bin/bash
+  environment:
+    # This is needed as our version on pnpm is 9.0.5 and dynamik use 8.10.0
+    COREPACK_ENABLE_STRICT: '0' 
+
+- name: Build with pnpm
+  become: true
+  become_user: dynamik
+  ansible.builtin.shell: |
+    /opt/dynamik/.local/share/pnpm/pnpm run build
+  environment:
+    CSUNIBO_DEPLOY: "true"
+    VITE_UPLD_URL: "0.0.0.0"
+    # This is needed as our version on pnpm is 9.0.5 and dynamik use 8.10.0
+    COREPACK_ENABLE_STRICT: '0' 
+  args:
+    chdir: /opt/dynamik/source
+    executable: /bin/bash
+
+- name: Copy the systemd service
+  become: true
+  ansible.builtin.template:
+    src: files/dynamik/dynamik.service.j2
+    dest: /etc/systemd/system/dynamik.service
+
+- name: Reload the systemd daemon
+  become: true
+  ansible.builtin.service:
+    daemon_reload: true
+
+- name: Restart and enable the dynamik service
+  become: true
+  ansible.builtin.service:
+    name: dynamik
+    state: restarted
+    enabled: true
