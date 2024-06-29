@@ -50,3 +50,9 @@
   tasks:
     - name: Setup CSLogin
       ansible.builtin.import_tasks: tasks/cslogin.yaml
+
+- name: Setup Polleg
+  hosts: polleg
+  tasks:
+    - name: Setup Polleg
+      ansible.builtin.import_tasks: tasks/polleg.yaml
