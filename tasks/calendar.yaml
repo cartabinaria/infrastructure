@@ -46,7 +46,7 @@
 
 - name: Check if go match the required version
   when: go_installed.stat.exists
-  block: 
+  block:
   - name: Get the installed version
     become: true
     ansible.builtin.command: /opt/calendar/go/bin/go version
@@ -58,7 +58,7 @@
     ansible.builtin.file:
       path: /opt/calendar/go
       state: absent
-  
+
   - name: Make go reinstall
     when: not go_version in go_installed_version.stdout
     ansible.builtin.set_fact:
@@ -94,7 +94,7 @@
   become: true
   become_user: calendar
   ansible.builtin.shell: |
-    /opt/calendar/.local/share/pnpm/pnpm install
+    /opt/calendar/.local/share/pnpm/pnpm install --frozen-lockfile
   args:
     chdir: /opt/calendar/source
     executable: /bin/bash
