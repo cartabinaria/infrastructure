@@ -1,5 +1,5 @@
 [Unit]
-Description=Homework client
+Description=Homework server
 Documentation=https://github.com/csunibo/homework.git
 
 After=network.target
@@ -7,7 +7,7 @@ After=network.target
 [Service]
 User=homework
 Group=homework
-ExecStart=node /opt/homework/source/build/index.js
+ExecStart=node /opt/homework/source/server.js
 WorkingDirectory=/opt/homework/source/
 ReadWriteDirectories=/opt/homework/source
 

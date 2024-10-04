@@ -38,7 +38,7 @@
   ansible.builtin.git:
     repo: "https://github.com/csunibo/homework"
     dest: /opt/homework/source
-    version: main
+    version: fix-deploy
     single_branch: true
     force: true
 
@@ -66,21 +66,34 @@
     remote_src: true
     dest: /opt/homework/source/static/bans.json
 
-- name: Copy systemd server service
+- name: Copy systemd client service
   become: true
   ansible.builtin.template:
     src: files/homework/homework.service.j2
     dest: /etc/systemd/system/homework.service
+
+- name: Copy systemd server service
+  become: true
+  ansible.builtin.template:
+    src: files/homework/homework-server.service.j2
+    dest: /etc/systemd/system/homework-server.service
 
 - name: Reload the systemd daemon
   become: true
   ansible.builtin.service:
     daemon_reload: true
 
-- name: Restart and enable the the server
+- name: Restart and enable the the client
   become: true
   ansible.builtin.service:
     name: homework
+    state: restarted 
+    enabled: true
+
+- name: Restart and enable the the server
+  become: true
+  ansible.builtin.service:
+    name: homework-server
     state: restarted 
     enabled: true
 
@@ -90,4 +103,12 @@
     rule: allow
     from_ip: "{{ http_proxy }}"
     port: 3000
+    proto: tcp
+
+- name: Ufw allow 3001 from proxy
+  become: true
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ http_proxy }}"
+    port: 3001
     proto: tcp
