@@ -81,7 +81,8 @@
     repo: https://github.com/csunibo/fileseeker.git
     dest: /opt/fileseeker/source
     recursive: true
-    version: 826012f
+    version: local_files
+    force: true
     single_branch: true
   register: git_result
 
@@ -102,6 +103,14 @@
   ansible.builtin.shell: |
     setcap 'cap_net_bind_service=+ep' /opt/fileseeker/source/fileseeker
 
+- name: Create the data directory
+  become: true
+  ansible.builtin.file:
+    path: /opt/fileseeker/data
+    state: directory
+    owner: fileseeker
+    group: fileseeker
+
 - name: Copy the systemd service
   become: true
   ansible.builtin.template:
@@ -120,10 +129,3 @@
   ansible.builtin.service:
     name: fileseeker
     state: restarted
-    enabled: true
-
-- name: Wait for the service to be up
-  become: true
-  ansible.builtin.wait_for:
-    port: 80
-    host: "{{ ansible_host }}"
