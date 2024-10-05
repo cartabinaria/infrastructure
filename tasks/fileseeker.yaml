@@ -15,13 +15,14 @@
   community.general.timezone:
     name: Europe/Rome
 
-- name: Install acl, libcap2-bin, git
+- name: Install required packages
   become: true
   ansible.builtin.package:
     name:
       - acl # needed to become the fileseeker user
       - libcap2-bin # to set the capabilities for the go binary
       - git
+      - rclone
     state: latest
     update_cache: true
 
@@ -91,17 +92,14 @@
   become: true
   become_user: fileseeker
   ansible.builtin.shell:
+    cmd: /opt/fileseeker/go/bin/go build -o /opt/fileseeker/fileseeker .
     chdir: /opt/fileseeker/source
-    cmd: /opt/fileseeker/go/bin/go build
-  args:
-    chdir: /opt/fileseeker/source
-    executable: /bin/bash
   register: bot_has_been_built
 
-- name: Allow the go binary to listen on low ports
+- name: Allow the rclone binary to bind to privileged ports
   become: true
   ansible.builtin.shell: |
-    setcap 'cap_net_bind_service=+ep' /opt/fileseeker/source/fileseeker
+    setcap 'cap_net_bind_service=+ep' /usr/bin/rclone
 
 - name: Create the data directory
   become: true
@@ -111,21 +109,35 @@
     owner: fileseeker
     group: fileseeker
 
-- name: Copy the systemd service
+- name: Copy the fileseeker systemd service
   become: true
   ansible.builtin.template:
     src: files/fileseeker/fileseeker.service.j2
     dest: /etc/systemd/system/fileseeker.service
   register: systemd_service_result
 
+- name: Copy the rclone systemd service
+  become: true
+  ansible.builtin.template:
+    src: files/fileseeker/rclone.service.j2
+    dest: /etc/systemd/system/rclone.service
+  register: rclone_service_result
+
 - name: Reload the systemd daemon
   become: true
   ansible.builtin.service:
     daemon_reload: true
-  when: systemd_service_result.changed
+  when: systemd_service_result.changed or rclone_service_result.changed
 
-- name: Restart and enable the fileseeker service
+- name: Start the fileseeker service
   become: true
   ansible.builtin.service:
     name: fileseeker
     state: restarted
+
+- name: Enable and start the rclone service
+  become: true
+  ansible.builtin.service:
+    name: rclone
+    state: started
+    enabled: true
