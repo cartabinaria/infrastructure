@@ -109,35 +109,29 @@
     owner: fileseeker
     group: fileseeker
 
-- name: Copy the fileseeker systemd service
+- name: Copy Systemd service files
   become: true
   ansible.builtin.template:
-    src: files/fileseeker/fileseeker.service.j2
-    dest: /etc/systemd/system/fileseeker.service
+    src: files/fileseeker/{{ item.src }}
+    dest: /etc/systemd/system/{{ item.dst }}
+  loop:
+    - { src: fileseeker.service.j2, dst: fileseeker.service }
+    - { src: fileseeker.timer.j2, dst: fileseeker.timer }
+    - { src: rclone.service.j2, dst: rclone.service }
   register: systemd_service_result
-
-- name: Copy the rclone systemd service
-  become: true
-  ansible.builtin.template:
-    src: files/fileseeker/rclone.service.j2
-    dest: /etc/systemd/system/rclone.service
-  register: rclone_service_result
 
 - name: Reload the systemd daemon
   become: true
   ansible.builtin.service:
     daemon_reload: true
-  when: systemd_service_result.changed or rclone_service_result.changed
+  when: systemd_service_result.changed
 
-- name: Start the fileseeker service
+- name: Enable systemd services
   become: true
-  ansible.builtin.service:
-    name: fileseeker
-    state: restarted
-
-- name: Enable and start the rclone service
-  become: true
-  ansible.builtin.service:
-    name: rclone
-    state: started
+  ansible.builtin.systemd:
+    name: "{{ item }}"
     enabled: true
+    state: started
+  loop:
+    - fileseeker.timer
+    - rclone
