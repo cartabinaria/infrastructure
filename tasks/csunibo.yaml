@@ -17,14 +17,6 @@
     home: /opt/csunibo
     shell: /usr/sbin/nologin
 
-- name: Allow TCP on HTTP(S)
-  become: true
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ http_proxy }}" # only proxy can
-    port: 8080
-    proto: tcp
-
 - name: Create {{ item }} directory for website
   become: true
   ansible.builtin.file:
