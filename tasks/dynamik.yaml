@@ -1,15 +1,3 @@
-- name: Allow TCP on HTTP from the proxy
-  become: true
-  community.general.ufw:
-    rule: allow
-    direction: "{{ item }}"
-    from_ip: "{{ http_proxy }}"
-    port: 80
-    proto: tcp
-  loop:
-    - in
-    - out
-
 - name: Add the NodeSource apt repository
   become: true
   block:

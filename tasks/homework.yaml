@@ -96,19 +96,3 @@
     name: homework-server
     state: restarted 
     enabled: true
-
-- name: Ufw allow 3000 from proxy
-  become: true
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ http_proxy }}"
-    port: 3000
-    proto: tcp
-
-- name: Ufw allow 3001 from proxy
-  become: true
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ http_proxy }}"
-    port: 3001
-    proto: tcp
