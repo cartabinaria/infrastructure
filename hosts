@@ -5,7 +5,7 @@ admstaff:
   hosts:
     bot:
       ansible_host: 130.136.3.70
-      ansible_port: 2222
+      ansible_port: 22
       ansible_user: debian
     calendar:
       ansible_host: 130.136.3.71
@@ -17,7 +17,7 @@ admstaff:
       ansible_user: debian
     cartabinaria:
       ansible_host: 130.136.3.74
-      ansible_port: 2222
+      ansible_port: 22
       ansible_user: debian
     fileseeker:
       ansible_host: 130.136.3.75

@@ -1,11 +1,4 @@
 ---
-- name: Security and init setup
-  hosts: all
-  gather_facts: no
-  tasks:
-    - name: Change ssh port
-      ansible.builtin.import_tasks: tasks/ssh.yaml
-
 - name: Setup calendar
   hosts: calendar
   tasks:
