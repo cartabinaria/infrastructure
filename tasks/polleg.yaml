@@ -60,7 +60,7 @@
   become: true
   become_user: polleg
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/polleg"
+    repo: "https://github.com/cartabinaria/polleg"
     dest: /opt/polleg/source
     version: main
     single_branch: true

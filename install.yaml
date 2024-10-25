@@ -26,10 +26,10 @@
   tasks:
     - ansible.builtin.import_tasks: tasks/fileseeker.yaml
 
-- name: Setup csunibo
-  hosts: csunibo
+- name: Setup cartabinaria website
+  hosts: cartabinaria
   tasks:
-    - ansible.builtin.import_tasks: tasks/csunibo.yaml
+    - ansible.builtin.import_tasks: tasks/cartabinaria.yaml
 
 - name: Setup CSGitBot
   hosts: csgitbot

@@ -22,7 +22,7 @@
   become: true
   become_user: bot
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/csgitbot"
+    repo: "https://github.com/cartabinaria/csgitbot"
     dest: /opt/bot/source
     version: main
     force: true
@@ -60,7 +60,7 @@
   ansible.builtin.lineinfile:
     path: /opt/bot/source/config.ini
     regexp: '^repo_owner ='
-    line: 'repo_owner = csunibo'
+    line: 'repo_owner = cartabinaria'
 
 - name: Substitute redirect uri line in config.ini
   become: true

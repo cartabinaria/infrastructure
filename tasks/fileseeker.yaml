@@ -67,7 +67,7 @@
   become: true
   become_user: fileseeker
   ansible.builtin.git:
-    repo: https://github.com/csunibo/fileseeker.git
+    repo: https://github.com/cartabinaria/fileseeker.git
     dest: /opt/fileseeker/source
     recursive: true
     version: local_files

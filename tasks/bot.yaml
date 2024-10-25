@@ -80,7 +80,7 @@
   become: true
   become_user: bot
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/informabot"
+    repo: "https://github.com/cartabinaria/informabot"
     dest: /opt/bot/source
     version: main
     single_branch: true

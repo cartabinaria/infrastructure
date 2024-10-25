@@ -64,7 +64,7 @@
   become: true
   become_user: cslogin
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/auth"
+    repo: "https://github.com/cartabinaria/auth"
     dest: /opt/cslogin/source
     version: main
     single_branch: true

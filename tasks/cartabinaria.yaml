@@ -8,13 +8,13 @@
     state: latest
     update_cache: true
 
-- name: Create the csunibo user
+- name: Create the cartabinaria user
   become: true
   ansible.builtin.user:
     state: present
     system: true
-    name: csunibo
-    home: /opt/csunibo
+    name: cartabinaria
+    home: /opt/cartabinaria
     shell: /usr/sbin/nologin
 
 - name: Create {{ item }} directory for website
@@ -22,11 +22,11 @@
   ansible.builtin.file:
     path: /opt/hugo
     state: directory
-    owner: csunibo
-    group: csunibo
+    owner: cartabinaria
+    group: cartabinaria
   with_items: 
     - /opt/hugo
-    - /opt/hugo/csunibo
+    - /opt/hugo/cartabinaria
 
 - name: Define Go Version
   ansible.builtin.set_fact:
@@ -67,41 +67,41 @@
   when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
   register: go_has_been_reinstalled
 
-- name: Clone csunibo website repository
+- name: Clone cartabinaria website repository
   become: true
-  become_user: csunibo
+  become_user: cartabinaria
   ansible.builtin.git:
-    repo: https://github.com/csunibo/csunibo.github.io
-    dest: /opt/hugo/csunibo/source
+    repo: https://github.com/cartabinaria/cartabinaria.github.io
+    dest: /opt/hugo/cartabinaria/source
     update: true
     force: yes
 
-- name: Change base url for csunibo website
+- name: Change base url for cartabinaria website
   become: true
   ansible.builtin.lineinfile:
-    path: /opt/hugo/csunibo/source/config/_default/config.yaml
+    path: /opt/hugo/cartabinaria/source/config/_default/config.yaml
     regexp: 'baseURL'
     line: "baseURL: '/'"
 
 - name: Remove public directory
   become: true
   ansible.builtin.file:
-    path: /opt/hugo/csunibo/source/public
+    path: /opt/hugo/cartabinaria/source/public
     state: absent
 
-- name: Build the csunibo website
+- name: Build the cartabinaria website
   become: true
-  become_user: csunibo
+  become_user: cartabinaria
   ansible.builtin.command:
     cmd: hugo
-    chdir: /opt/hugo/csunibo/source
+    chdir: /opt/hugo/cartabinaria/source
   environment:
     PATH: "/opt/hugo/go/bin:{{ ansible_env.PATH }}"
 
 - name: Copy lighttpd configuration file
   become: true
   ansible.builtin.copy:
-    src: files/csunibo/lighttpd.conf
+    src: files/cartabinaria/lighttpd.conf
     dest: /etc/lighttpd/lighttpd.conf
     backup: yes
 

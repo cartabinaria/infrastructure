@@ -45,7 +45,7 @@
   become: true
   become_user: dynamik
   ansible.builtin.git:
-    repo: https://github.com/csunibo/dynamik
+    repo: https://github.com/cartabinaria/dynamik
     dest: /opt/dynamik/source
     version: main
     force: true
@@ -89,7 +89,7 @@
   ansible.builtin.shell: |
     /opt/dynamik/.local/share/pnpm/pnpm run build
   environment:
-    CSUNIBO_DEPLOY: "true"
+    CARTABINARIA_DEPLOY: "true"
     VITE_UPLD_URL: "0.0.0.0"
     # This is needed as our version on pnpm is 9.0.5 and dynamik use 8.10.0
     COREPACK_ENABLE_STRICT: '0' 

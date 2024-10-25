@@ -1,6 +1,6 @@
 [Unit]
 Description=CSGitbot
-Documentation=https://github.com/csunibo/csgitbot.git
+Documentation=https://github.com/cartabinaria/csgitbot.git
 
 After=network.target
 

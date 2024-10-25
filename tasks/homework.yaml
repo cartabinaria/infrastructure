@@ -36,7 +36,7 @@
   become: true
   become_user: homework
   ansible.builtin.git:
-    repo: "https://github.com/csunibo/homework"
+    repo: "https://github.com/cartabinaria/homework"
     dest: /opt/homework/source
     version: fix-deploy
     single_branch: true
