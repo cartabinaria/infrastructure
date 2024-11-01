@@ -26,75 +26,91 @@
   ansible.builtin.set_fact:
     go_version: 1.22.1
 
-- name: Check if go is installed
-  become: true
-  ansible.builtin.stat:
-    path: /opt/calendar/go
-  register: go_installed
-
-- name: Check if go match the required version
-  when: go_installed.stat.exists
-  block:
-  - name: Get the installed version
-    become: true
-    ansible.builtin.command: /opt/calendar/go/bin/go version
-    register: go_installed_version
-
-  - name: Remove go dir if the version does not match
-    when: not go_version in go_installed_version.stdout
-    become: true
-    ansible.builtin.file:
-      path: /opt/calendar/go
-      state: absent
-
-  - name: Make go reinstall
-    when: not go_version in go_installed_version.stdout
-    ansible.builtin.set_fact:
-      need_to_reinstall_go: true
-
-- name: Install Go Binary
-  become: true
-  become_user: calendar
-  ansible.builtin.unarchive:
-    src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
-    dest: /opt/calendar
-    remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
-  register: go_has_been_reinstalled
-
-- name: Install pnpm
-  become: true
-  become_user: calendar
-  ansible.builtin.shell: |
-    curl -fsSL https://get.pnpm.io/install.sh | sh -
-
 - name: Clone the UniboCalendar project
   become: true
   become_user: calendar
   ansible.builtin.git:
-    repo: https://github.com/VaiTon/UniboCalendar
+    repo: https://github.com/cartabinaria/unibocalendar
     dest: /opt/calendar/source
     version: main
     single_branch: true
   register: git_result
 
-- name: Install the dependencies with pnpm
+- name: Install pnpm
   become: true
   become_user: calendar
-  ansible.builtin.shell: |
-    /opt/calendar/.local/share/pnpm/pnpm install --frozen-lockfile
-  args:
-    chdir: /opt/calendar/source
-    executable: /bin/bash
+  block:
+    - name: Check for pnpm
+      ansible.builtin.stat:
+        path: /opt/calendar/.local/share/pnpm
+      register: pnpm_folder
 
-- name: Run css:build with pnpm
+    - name: Install pnpm
+      ansible.builtin.shell: |
+        curl -fsSL https://get.pnpm.io/install.sh | sh -
+      when: not pnpm_folder.stat.exists
+
+    - name: Update pnpm
+      ansible.builtin.shell: |
+        /opt/calendar/.local/share/pnpm/pnpm self-update
+      when: pnpm_folder.stat.exists
+      register: pnpm_update_result
+      changed_when: not pnpm_update_result.stdout is search('doesn\'t need an update')
+
+- name: Build with pnpm
   become: true
   become_user: calendar
-  ansible.builtin.shell: |
-    /opt/calendar/.local/share/pnpm/pnpm run css:build
-  args:
-    chdir: /opt/calendar/source
-    executable: /bin/bash
+  block:
+    - name: Install the dependencies with pnpm
+      ansible.builtin.shell: |
+        /opt/calendar/.local/share/pnpm/pnpm install --frozen-lockfile
+      args:
+        chdir: /opt/calendar/source
+        executable: /bin/bash
+      register: pnpm_install_result
+      changed_when: not pnpm_install_result.stdout is search('Already up to date')
+
+    - name: Run css:build with pnpm
+      ansible.builtin.shell: |
+        /opt/calendar/.local/share/pnpm/pnpm run css:build
+      args:
+        chdir: /opt/calendar/source
+        executable: /bin/bash
+
+- name: Install go
+  block:
+    - name: Check if go is installed
+      become: true
+      ansible.builtin.stat:
+        path: /opt/calendar/go
+      register: go_installed
+
+    - name: Check if go match the required version
+      when: go_installed.stat.exists
+      block:
+        - name: Get the installed version
+          become: true
+          ansible.builtin.command: /opt/calendar/go/bin/go version
+          register: go_installed_version
+
+        - name: Remove go dir if the version does not match
+          when: not go_installed_version.stdout is search(go_version)
+          become: true
+          ansible.builtin.file:
+            path: /opt/calendar/go
+            state: absent
+
+    - name: Download and extract go
+      become: true
+      become_user: calendar
+      ansible.builtin.unarchive:
+        src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+        dest: /opt/calendar
+        remote_src: true
+      when: |
+        (not go_installed.stat.exists) or
+        (not go_installed_version.stdout is search(go_version))
+      register: go_has_been_reinstalled
 
 - name: Build Calendar with go
   # when: git_result.changed or go_has_been_reinstalled.changed|default('false')
