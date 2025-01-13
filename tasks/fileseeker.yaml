@@ -70,7 +70,6 @@
     repo: https://github.com/cartabinaria/fileseeker.git
     dest: /opt/fileseeker/source
     recursive: true
-    version: local_files
     force: true
     single_branch: true
   register: git_result
@@ -123,3 +122,4 @@
   loop:
     - fileseeker.timer
     - rclone
+    - fileseeker

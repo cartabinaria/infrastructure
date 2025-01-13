@@ -21,7 +21,7 @@ admstaff:
       ansible_user: debian
     fileseeker:
       ansible_host: 130.136.3.75
-      ansible_port: 2222
+      ansible_port: 22
       ansible_user: debian
     csgitbot:
       ansible_host: 130.136.3.76
