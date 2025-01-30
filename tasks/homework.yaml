@@ -38,7 +38,7 @@
   ansible.builtin.git:
     repo: "https://github.com/cartabinaria/homework"
     dest: /opt/homework/source
-    version: fix-deploy
+    version: main
     single_branch: true
     force: true
 
