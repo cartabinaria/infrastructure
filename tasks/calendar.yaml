@@ -51,8 +51,9 @@
       when: not pnpm_folder.stat.exists
 
     - name: Update pnpm
-      ansible.builtin.shell: |
-        /opt/calendar/.local/share/pnpm/pnpm self-update
+      ansible.builtin.shell:
+        cmd: /opt/calendar/.local/share/pnpm/pnpm self-update
+        chdir: /opt/calendar/
       when: pnpm_folder.stat.exists
       register: pnpm_update_result
       changed_when: not pnpm_update_result.stdout is search('doesn\'t need an update')
