@@ -8,9 +8,7 @@
   ansible.builtin.package:
     name:
       - acl # needed to become the fileseeker user
-      - libcap2-bin # to set the capabilities for the go binary
       - git
-      - rclone
     state: latest
     update_cache: true
 
@@ -25,7 +23,7 @@
 
 - name: Define Go Version
   ansible.builtin.set_fact:
-    go_version: 1.21.1
+    go_version: 1.23.0
 
 - name: Check if go is installed
   become: true
@@ -83,28 +81,14 @@
     chdir: /opt/fileseeker/source
   register: bot_has_been_built
 
-- name: Allow the rclone binary to bind to privileged ports
-  become: true
-  ansible.builtin.shell: |
-    setcap 'cap_net_bind_service=+ep' /usr/bin/rclone
-
-- name: Create the data directory
-  become: true
-  ansible.builtin.file:
-    path: /opt/fileseeker/data
-    state: directory
-    owner: fileseeker
-    group: fileseeker
-
-- name: Copy Systemd service files
+- name: Copy Systemd service and config
   become: true
   ansible.builtin.template:
     src: files/fileseeker/{{ item.src }}
-    dest: /etc/systemd/system/{{ item.dst }}
+    dest: "{{ item.dst }}"
   loop:
-    - { src: fileseeker.service.j2, dst: fileseeker.service }
-    - { src: fileseeker.timer.j2, dst: fileseeker.timer }
-    - { src: rclone.service.j2, dst: rclone.service }
+    - { src: fileseeker.service.j2, dst: /etc/systemd/system/fileseeker.service }
+    - { src: config.toml.j2, dst: /opt/fileseeker/config.toml }
   register: systemd_service_result
 
 - name: Reload the systemd daemon
@@ -116,10 +100,6 @@
 - name: Enable systemd services
   become: true
   ansible.builtin.systemd:
-    name: "{{ item }}"
+    name: fileseeker 
     enabled: true
     state: started
-  loop:
-    - fileseeker.timer
-    - rclone
-    - fileseeker
