@@ -10,3 +10,6 @@ Group=fileseeker
 ReadWriteDirectories=/opt/fileseeker/
 WorkingDirectory=/opt/fileseeker/source/
 ExecStart=/opt/fileseeker/fileseeker -c /opt/fileseeker/config.toml
+
+[Install]
+WantedBy=multi-user.target
