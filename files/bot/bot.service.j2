@@ -12,6 +12,8 @@ Environment=GOTRACEBACK=crash
 ExecStart=/opt/bot/bot 
 WorkingDirectory=/opt/bot/source/
 ReadWriteDirectories=/opt/bot/source
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
