@@ -72,7 +72,7 @@
   become: true
   become_user: bot
   ansible.builtin.stat:
-    path: /opt/bot/source/json/groups.json
+    path: /opt/bot/source/json/topics.json
   register: topicsFile
    
 - name: Copy groups file to tmp
