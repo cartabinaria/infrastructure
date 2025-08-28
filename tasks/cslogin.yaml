@@ -8,12 +8,8 @@
     name:
       - acl 
       - git
-      - postgresql
     state: latest
     update_cache: true
-
-
-# DA FARE IL DB. Se lo lanciamo su una macchina vuota ovviamente non funzionerà
 
 - name: Create the cslogin user
   become: true

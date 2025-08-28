@@ -1,15 +1,18 @@
 - name: Define Go Version
   ansible.builtin.set_fact:
-    go_version: 1.22.4
+    go_version: 1.24.6
 
-- name: Install acl, git
+- name: Install acl, git, postgresql
   become: true
   ansible.builtin.package:
     name:
       - acl 
       - git
+      - postgresql
     state: latest
     update_cache: true
+
+# TODO: Database setup
 
 - name: Create the polleg user
   become: true
@@ -18,7 +21,7 @@
     system: true
     name: polleg
     home: /opt/polleg
-    shell: /usr/sbin/nopolleg
+    shell: /usr/sbin/nologin
 
 - name: Check if go is installed
   become: true
