@@ -43,7 +43,7 @@
     ansible.builtin.file:
       path: /opt/polleg/go
       state: absent
-  
+
   - name: Make go reinstall
     when: "not 'go_version' in go_installed_version.stdout"
     ansible.builtin.set_fact:
@@ -56,7 +56,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/polleg
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  when: not go_installed.stat.exists or need_to_reinstall_go|default(false)
   register: go_has_been_reinstalled
 
 - name: Clone a github repository
@@ -70,7 +70,7 @@
   register: git_result
 
 - name: Build polleg
-  when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  when: git_result.changed or go_has_been_reinstalled.changed|default(false)
   become: true
   become_user: polleg
   ansible.builtin.shell:
@@ -109,4 +109,4 @@
     name: polleg 
     state: restarted 
     enabled: true
-  when: git_result.changed or polleg_has_been_built.changed|default('false')
+  when: git_result.changed or polleg_has_been_built.changed|default(false)

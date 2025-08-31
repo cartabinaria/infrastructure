@@ -58,7 +58,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/bot
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  when: not go_installed.stat.exists or need_to_reinstall_go|default(false)
   register: go_has_been_reinstalled
 
 - name: Check if the group file is present
@@ -128,7 +128,7 @@
     bot_token: "{{ lookup('file', 'passwords/bot_token') }}"
 
 - name: Build GoBot
-  when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  when: git_result.changed or go_has_been_reinstalled.changed|default(false)
   become: true
   become_user: bot
   ansible.builtin.shell:
@@ -162,6 +162,6 @@
     name: bot 
     state: restarted 
     enabled: true
-  when: git_result.changed or bot_has_been_built.changed|default('false')
+  when: git_result.changed or bot_has_been_built.changed|default(false)
     
   

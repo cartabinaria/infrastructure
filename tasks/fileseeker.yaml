@@ -58,7 +58,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/fileseeker
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  when: not go_installed.stat.exists or need_to_reinstall_go|default(false)
   register: go_has_been_reinstalled
 
 - name: Clone the fileseeker project
@@ -73,7 +73,7 @@
   register: git_result
 
 - name: Build fileseeker with go
-  # when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  when: git_result.changed or go_has_been_reinstalled.changed|default(false)
   become: true
   become_user: fileseeker
   ansible.builtin.shell:

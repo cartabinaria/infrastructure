@@ -40,7 +40,7 @@
     ansible.builtin.file:
       path: /opt/cslogin/go
       state: absent
-  
+
   - name: Make go reinstall
     when: "not 'go_version' in go_installed_version.stdout"
     ansible.builtin.set_fact:
@@ -53,7 +53,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/cslogin
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  when: not go_installed.stat.exists or need_to_reinstall_go|default(false)
   register: go_has_been_reinstalled
 
 - name: Clone a github repository
@@ -67,7 +67,7 @@
   register: git_result
 
 - name: Build cslogin
-  when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  when: git_result.changed or go_has_been_reinstalled.changed|default(false)
   become: true
   become_user: cslogin
   ansible.builtin.shell:
@@ -106,4 +106,4 @@
     name: cslogin 
     state: restarted 
     enabled: true
-  when: git_result.changed or cslogin_has_been_built.changed|default('false')
+  when: git_result.changed or cslogin_has_been_built.changed|default(false)

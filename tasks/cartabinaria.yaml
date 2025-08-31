@@ -64,7 +64,7 @@
     src: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
     dest: /opt/hugo
     remote_src: true
-  when: not go_installed.stat.exists or need_to_reinstall_go|default('false')
+  when: not go_installed.stat.exists or need_to_reinstall_go|default(false)
   register: go_has_been_reinstalled
 
 - name: Clone cartabinaria website repository

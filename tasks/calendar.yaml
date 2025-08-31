@@ -114,7 +114,7 @@
       register: go_has_been_reinstalled
 
 - name: Build Calendar with go
-  # when: git_result.changed or go_has_been_reinstalled.changed|default('false')
+  when: git_result.changed or go_has_been_reinstalled.changed|default(false)
   become: true
   become_user: calendar
   ansible.builtin.shell:
