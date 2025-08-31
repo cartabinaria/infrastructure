@@ -8,9 +8,10 @@ After=network.target
 User=cslogin
 Group=cslogin
 Environment=GOTRACEBACK=crash
-ExecStart=/opt/cslogin/cslogin 
+ExecStart=/opt/cslogin/cslogin /opt/cslogin/config.toml
 WorkingDirectory=/opt/cslogin
 ReadWriteDirectories=/opt/cslogin
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
