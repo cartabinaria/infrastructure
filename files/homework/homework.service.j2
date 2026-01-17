@@ -7,7 +7,7 @@ After=network.target
 [Service]
 User=homework
 Group=homework
-ExecStart=node /opt/homework/source/build/index.js
+ExecStart=/opt/homework/node-v{{ nodejs_version }}-linux-x64/bin/node /opt/homework/source/build/index.js
 WorkingDirectory=/opt/homework/source/
 ReadWriteDirectories=/opt/homework/source
 

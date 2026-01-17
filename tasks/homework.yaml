@@ -1,3 +1,7 @@
+- name: Define node_version
+  ansible.builtin.set_fact:
+    nodejs_version: "24.13.0"
+
 - name: Save bans if we are doing a re-deploy
   become: true
   block:
@@ -6,12 +10,16 @@
         path: /opt/homework/source/static/bans.json 
       register: bans
 
+    - name: Backup name for bans
+      ansible.builtin.set_fact:
+        bans_backup_name: /tmp/bans.json.{{ ansible_date_time.iso8601_basic }}
+
     - name: Copy bans if present
       when: bans.stat.exists
       ansible.builtin.copy:
         src: /opt/homework/source/static/bans.json
         remote_src: true
-        dest: /tmp/bans.json
+        dest: "{{ bans_backup_name }}"
 
 - name: Install packages
   become: true
@@ -19,8 +27,6 @@
     name: 
       - git
       - acl 
-      - nodejs 
-      - npm 
     state: latest
 
 - name: Create the homework user
@@ -31,6 +37,43 @@
     name: homework
     home: /opt/homework
     shell: /usr/sbin/nologin
+
+- name: Check if nodejs is installed
+  become: true
+  ansible.builtin.stat:
+    path: /opt/homework/node-v{{ nodejs_version }}-linux-x64
+  register: nodejs_installed
+
+- name: Check if nodejs match the required version
+  when: nodejs_installed.stat.exists
+  block: 
+  - name: Get the installed version
+    become: true
+    ansible.builtin.command: /opt/homework/node-v{{ nodejs_version }}-linux-x64/bin/node --version
+    register: nodejs_installed_version
+    changed_when: false
+  
+  - name: Remove nodejs dir if the version does not match
+    when: nodejs_version not in nodejs_installed_version.stdout
+    become: true
+    ansible.builtin.file:
+      path: /opt/homework/node-v{{ nodejs_version }}-linux-x64
+      state: absent
+  
+  - name: Make nodejs reinstall
+    when: nodejs_version not in nodejs_installed_version.stdout
+    ansible.builtin.set_fact:
+      need_to_reinstall_nodejs: true
+
+- name: Install Nodejs Binary
+  become: true
+  become_user: homework
+  ansible.builtin.unarchive:
+    src: "https://nodejs.org/dist/v{{ nodejs_version }}/node-v{{ nodejs_version }}-linux-x64.tar.xz"
+    dest: /opt/homework
+    remote_src: true
+  when: not nodejs_installed.stat.exists or need_to_reinstall_nodejs|default(false)
+  register: nodejs_has_been_reinstalled
 
 - name: Clone the github repository
   become: true
@@ -49,6 +92,8 @@
     npm install
   args:
     chdir: /opt/homework/source
+  environment:
+    PATH: '/opt/homework/node-v{{ nodejs_version }}-linux-x64/bin:{{ ansible_facts["env"] .PATH }}'
 
 - name: Build client
   become: true
@@ -57,12 +102,14 @@
     npm run build
   args:
     chdir: /opt/homework/source
+  environment:
+    PATH: '/opt/homework/node-v{{ nodejs_version }}-linux-x64/bin:{{ ansible_facts["env"] .PATH }}'
 
 - name: Copy old bans
   become: true
   when: bans.stat.exists
   ansible.builtin.copy:
-    src: /tmp/bans.json
+    src: "{{ bans_backup_name }}"
     remote_src: true
     dest: /opt/homework/source/static/bans.json
 
