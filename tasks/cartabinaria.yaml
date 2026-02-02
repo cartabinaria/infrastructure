@@ -17,10 +17,10 @@
     home: /opt/cartabinaria
     shell: /usr/sbin/nologin
 
-- name: Create {{ item }} directory for website
+- name: Create directories for website
   become: true
   ansible.builtin.file:
-    path: /opt/hugo
+    path: "{{ item }}"
     state: directory
     owner: cartabinaria
     group: cartabinaria
